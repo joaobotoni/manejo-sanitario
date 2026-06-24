@@ -6,8 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="?attr/selectableItemBackground"
-    android:clickable="true"
-    android:focusable="true"
     android:paddingTop="10dp"
     android:paddingBottom="10dp">
 
@@ -34,13 +32,14 @@
 
     <TextView
         android:id="@+id/text_nome"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:maxLines="1"
         android:textColor="?attr/colorOnSurface"
         android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_info"
         app:layout_constraintStart_toEndOf="@id/card_icone"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="Vitamina ADE" />

@@ -1,19 +1,19 @@
 package com.omni.container.ui.states;
 
 public class ProtocoloItemUiState {
+    private final int id;
     private final String descricao;
-    private final String aplicacao;
 
-    public ProtocoloItemUiState(String descricao, String aplicacao) {
+    public ProtocoloItemUiState(int id, String descricao) {
+        this.id = id;
         this.descricao = descricao;
-        this.aplicacao = aplicacao;
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getDescricao() {
         return descricao;
-    }
-
-    public String getAplicacao() {
-        return aplicacao;
     }
 }

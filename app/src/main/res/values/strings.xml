@@ -10,6 +10,7 @@
     <string name="label_medicamentos">Medicamentos</string>
     <string name="msg_empty_state_medicamentos">Selecione um protocolo ou\nadicione um medicamento avulso</string>
     <string name="action_salvar">Salvar</string>
+    <string name="action_confirmar">Confirmar</string>
     <string name="cd_add_medicamento_avulso">Adicionar medicamento avulso</string>
 
     <string name="checkbox_aplicado">Aplicado</string>
@@ -28,6 +29,7 @@
     <string name="format_dose">%1$s mL</string>
     <string name="format_origem_e_dosagem">%1$s · %2$s</string>
     <string name="erro_carregar_protocolos">Erro ao carregar os protocolos.</string>
+    <string name="erro_carregar_items">Erro ao carregar os items.</string>
     <string name="erro_carregar_items_protocolo">Erro ao carregar os items do protocolo.</string>
     <string name="erro_obter_informacoes_animal">Não foi possível obter as informações do animal.</string>
     <string name="erro_obter_informacoes_item">Não foi possível obter as informações do item selecionado.</string>

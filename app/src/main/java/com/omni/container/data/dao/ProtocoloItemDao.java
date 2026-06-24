@@ -37,6 +37,9 @@ public interface ProtocoloItemDao  {
             " order by ordem ")
     ProtocoloItem findByIdTipoManejo(int idProtocolo, int id_tipo_manejo);
 
+    @Query("SELECT * FROM xgp_protocolo_item WHERE id_item = :idItem")
+    ProtocoloItem findItemProtocoloByIdItem(int idItem);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     long insert(ProtocoloItem protocoloItem);
 

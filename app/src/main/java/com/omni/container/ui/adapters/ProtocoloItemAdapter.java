@@ -19,7 +19,7 @@ import java.util.List;
 public class ProtocoloItemAdapter extends RecyclerView.Adapter<ProtocoloItemAdapter.ViewHolder> {
 
     public interface OnProtocoloItemClickListener {
-        void onInfoClicked();
+        void onInfoClicked(@NonNull ProtocoloItemUiState state);
 
         void onAddClicked(@NonNull ProtocoloItemUiState state);
     }
@@ -84,8 +84,8 @@ public class ProtocoloItemAdapter extends RecyclerView.Adapter<ProtocoloItemAdap
         }
 
         private void notifyInfoClicked() {
-            if (clickListener == null) return;
-            clickListener.onInfoClicked();
+            if (clickListener == null || currentState == null) return;
+            clickListener.onInfoClicked(currentState);
         }
 
         private void notifyAddClicked() {

@@ -1,30 +1,63 @@
 package com.omni.container.ui.fragments;
 
+import static com.omni.container.ui.states.OrigemItem.PROTOCOLO;
+
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.omni.container.R;
 import com.omni.container.data.AppDatabase;
+import com.omni.container.data.dao.ProtocoloItemDao;
+import com.omni.container.data.entities.Protocolo;
+import com.omni.container.data.entities.ProtocoloItem;
+import com.omni.container.ui.adapters.ProtocoloItemAdapter;
+import com.omni.container.ui.adapters.ProtocoloItemAplicacaoAdapter;
+import com.omni.container.ui.states.ProtocoloItemAplicacaoUiState;
+import com.omni.container.ui.states.ProtocoloItemUiState;
+import com.omni.container.ui.states.ProtocoloUiState;
 
 import java.io.Closeable;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 public class ConsultaMedicamentoFragment extends Fragment {
+    private static final String TAG = "CONSULTA_MEDICAMENTO_FRAGMENT";
+    private static final int THREAD_POOL_SIZE = 4;
+    private EditText editBusca;
+    private Button btnConfirmar;
+    private RecyclerView recyclerMedicamentosConsulta;
+    private ProtocoloItemAdapter adapter;
+    private List<ProtocoloItemUiState> items = new ArrayList<>();
+    private Executor executor;
 
     @Nullable
     @Override
@@ -35,30 +68,59 @@ public class ConsultaMedicamentoFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        init();
+        createExecutor();
+        bindViews(view);
+        fetchItems();
+        setupAdapter();
+        setupClickListeners();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        executor.close();
+        releaseViews();
+    }
+
+    private void bindViews(@NonNull View view) {
+        editBusca = view.findViewById(R.id.edit_busca);
+        recyclerMedicamentosConsulta = view.findViewById(R.id.recycler_medicamentos_consulta);
+        btnConfirmar = view.findViewById(R.id.btn_confirmar);
+    }
+
+    private void createExecutor() {
+        executor = new Executor(createExecutorDeThreads(), createHandlerDaMainThread());
     }
 
 
-    private void init() {
-        setupViews();
-        setupClickListeners();
+    private void releaseViews() {
+        editBusca = null;
+        recyclerMedicamentosConsulta = null;
+    }
+
+    private void showSnackBarErro(@NonNull String message) {
+        View view = requireView();
+        Snackbar.make(view, message, Snackbar.LENGTH_LONG)
+                .setBackgroundTint(ContextCompat.getColor(view.getContext(), android.R.color.holo_red_dark))
+                .setTextColor(Color.WHITE)
+                .show();
     }
 
 
-    private void destroy() {
-
-    }
-
-    private void setupViews() {
-
+    @SuppressLint("NotifyDataSetChanged")
+    private void showItems(@NonNull List<ProtocoloItemUiState> list) {
+        items.clear();
+        items.addAll(list);
+        adapter.notifyDataSetChanged();
     }
 
     private void setupClickListeners() {
+        btnConfirmar.setOnClickListener(v -> navegarParaTraz());
+    }
+
+    private void setupAplicacaoRecyclerView() {
+        adapter = new ProtocoloItemAdapter(items, null);
+        setupVerticalRecyclerView(recyclerMedicamentosConsulta, adapter, requireContext());
     }
 
     private void navegarParaTraz() {
@@ -69,18 +131,53 @@ public class ConsultaMedicamentoFragment extends Fragment {
                 .commit();
     }
 
-    public static void setupVerticalRecyclerView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.Adapter<?> adapter, @NonNull Context context) {
-        setupRecyclerView(recyclerView, adapter, context, LinearLayoutManager.VERTICAL);
+    private void setupAdapter() {
+        setupAplicacaoRecyclerView();
     }
 
-    private static void setupRecyclerView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.Adapter<?> adapter, @NonNull Context context, int orientation) {
-        recyclerView.setLayoutManager(new LinearLayoutManager(context, orientation, false));
+    public static void setupVerticalRecyclerView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.Adapter<?> adapter, @NonNull Context context) {
+        recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(adapter);
     }
 
+    private void fetchItems() {
+        executor.execute(requireContext(), AppDatabase::protocoloItemDao, ProtocoloItemDao::getAll, this::handleItems, this::handleErroAoBuscarItems);
+    }
+
+    private void handleItems(@NonNull List<ProtocoloItem> protocoloItems) {
+        showItems(Mapper.fromItensToUiStateList(protocoloItems));
+    }
+
+    private void handleErroAoBuscarItems(@NonNull Throwable throwable) {
+        showSnackBarErro(getString(R.string.erro_carregar_items));
+        Log.d(TAG, getString(R.string.erro_carregar_items_protocolo) + throwable.getMessage());
+    }
+
+    private ExecutorService createExecutorDeThreads() {
+        return Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+    }
+
+    private Handler createHandlerDaMainThread() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            return Handler.createAsync(Looper.getMainLooper());
+        }
+        return new Handler(Looper.getMainLooper());
+    }
+
+    private static final class Mapper {
+
+        static List<ProtocoloItemUiState> fromItensToUiStateList(@NonNull List<ProtocoloItem> itens) {
+            return itens.stream()
+                    .map(Mapper::fromProtocoloItemToUiState)
+                    .collect(Collectors.toList());
+        }
+
+        private static ProtocoloItemUiState fromProtocoloItemToUiState(@NonNull ProtocoloItem protocoloItem) {
+            return new ProtocoloItemUiState(protocoloItem.getIdProtocoloItem(), protocoloItem.getDescricao());
+        }
+    }
 
     private static final class Executor implements Closeable {
-
         private final Handler handler;
         private final ExecutorService executor;
         private volatile boolean cancelled = false;
@@ -90,59 +187,26 @@ public class ConsultaMedicamentoFragment extends Fragment {
             this.handler = handler;
         }
 
-        public <T> void execute(@NonNull Callable<T> task, @NonNull Consumer<T> onSuccess, @NonNull Consumer<Exception> onError) {
+        <D, E> void execute(@NonNull Context context, @NonNull Function<AppDatabase, D> daoExtractor, @NonNull Function<D, E> query, @NonNull Consumer<E> onSuccess, @NonNull Consumer<Exception> onError) {
+            submit(() -> query.apply(resolveDao(context, daoExtractor)), onSuccess, onError);
+        }
+
+        <D, P, E> void execute(@NonNull Context context, @NonNull Function<AppDatabase, D> daoExtractor, @NonNull BiFunction<D, P, E> query, @NonNull P param, @NonNull Consumer<E> onSuccess, @NonNull Consumer<Exception> onError) {
+            submit(() -> query.apply(resolveDao(context, daoExtractor), param), onSuccess, onError);
+        }
+
+        private <T> void submit(@NonNull Callable<T> task, @NonNull Consumer<T> onSuccess, @NonNull Consumer<Exception> onError) {
             executor.submit(() -> runTask(task, onSuccess, onError));
         }
 
-        public <D, E> void execute(@NonNull Context context,
-                                   @NonNull Function<AppDatabase, D> daoExtractor,
-                                   @NonNull Function<D, E> query,
-                                   @NonNull Consumer<E> onSuccess,
-                                   @NonNull Consumer<Exception> onError) {
-            executor.submit(() -> runWithDao(context, daoExtractor, query, onSuccess, onError));
+        @NonNull
+        private <D> D resolveDao(@NonNull Context context, @NonNull Function<AppDatabase, D> daoExtractor) {
+            return daoExtractor.apply(AppDatabase.getDatabase(context.getApplicationContext()));
         }
 
-        public <D, P, E> void execute(@NonNull Context context,
-                                      @NonNull Function<AppDatabase, D> daoExtractor,
-                                      @NonNull BiFunction<D, P, E> query,
-                                      @NonNull P param,
-                                      @NonNull Consumer<E> onSuccess,
-                                      @NonNull Consumer<Exception> onError) {
-            executor.submit(() -> runWithDaoAndParam(context, daoExtractor, query, param, onSuccess, onError));
-        }
-
-        private <T> void runTask(@NonNull Callable<T> task,
-                                 @NonNull Consumer<T> onSuccess,
-                                 @NonNull Consumer<Exception> onError) {
+        private <T> void runTask(@NonNull Callable<T> task, @NonNull Consumer<T> onSuccess, @NonNull Consumer<Exception> onError) {
             try {
                 T result = task.call();
-                post(() -> onSuccess.accept(result));
-            } catch (Exception e) {
-                post(() -> onError.accept(e));
-            }
-        }
-
-        private <D, E> void runWithDao(@NonNull Context context,
-                                       @NonNull Function<AppDatabase, D> daoExtractor,
-                                       @NonNull Function<D, E> query,
-                                       @NonNull Consumer<E> onSuccess,
-                                       @NonNull Consumer<Exception> onError) {
-            try (Data<D> data = Data.of(daoExtractor)) {
-                E result = query.apply(data.get(context));
-                post(() -> onSuccess.accept(result));
-            } catch (Exception e) {
-                post(() -> onError.accept(e));
-            }
-        }
-
-        private <D, P, E> void runWithDaoAndParam(@NonNull Context context,
-                                                  @NonNull Function<AppDatabase, D> daoExtractor,
-                                                  @NonNull BiFunction<D, P, E> query,
-                                                  @NonNull P param,
-                                                  @NonNull Consumer<E> onSuccess,
-                                                  @NonNull Consumer<Exception> onError) {
-            try (Data<D> data = Data.of(daoExtractor)) {
-                E result = query.apply(data.get(context), param);
                 post(() -> onSuccess.accept(result));
             } catch (Exception e) {
                 post(() -> onError.accept(e));
@@ -167,39 +231,6 @@ public class ConsultaMedicamentoFragment extends Fragment {
         public synchronized void close() {
             cancelled = true;
             executor.shutdown();
-        }
-    }
-
-    private static class Data<T> implements Closeable {
-
-        private volatile AppDatabase database;
-        private Function<AppDatabase, T> extractor;
-        private volatile boolean closed = false;
-
-        private Data(@NonNull Function<AppDatabase, T> extractor) {
-            this.extractor = extractor;
-        }
-
-        static <T> Data<T> of(@NonNull Function<AppDatabase, T> extractor) {
-            return new Data<>(extractor);
-        }
-
-        private synchronized T get(@NonNull Context context) {
-            if (closed) {
-                throw new IllegalStateException("Recurso já foi fechado.");
-            }
-            if (database == null) {
-                database = AppDatabase.getDatabase(context.getApplicationContext());
-            }
-            return extractor.apply(database);
-        }
-
-
-        @Override
-        public synchronized void close() {
-            closed = true;
-            database = null;
-            extractor = null;
         }
     }
 }
