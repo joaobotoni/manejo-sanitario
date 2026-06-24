@@ -1,7 +1,5 @@
 package com.omni.container.ui.fragments;
 
-import static com.omni.container.ui.states.OrigemItem.PROTOCOLO;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
@@ -9,6 +7,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,19 +27,15 @@ import com.google.android.material.snackbar.Snackbar;
 import com.omni.container.R;
 import com.omni.container.data.AppDatabase;
 import com.omni.container.data.dao.ProtocoloItemDao;
-import com.omni.container.data.entities.Protocolo;
 import com.omni.container.data.entities.ProtocoloItem;
 import com.omni.container.ui.adapters.ProtocoloItemAdapter;
-import com.omni.container.ui.adapters.ProtocoloItemAplicacaoAdapter;
-import com.omni.container.ui.states.ProtocoloItemAplicacaoUiState;
+import com.omni.container.ui.adapters.ProtocoloItemAdapter.OnProtocoloItemClickListener;
 import com.omni.container.ui.states.ProtocoloItemUiState;
-import com.omni.container.ui.states.ProtocoloUiState;
 
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -48,16 +44,18 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-
 public class ConsultaMedicamentoFragment extends Fragment {
     private static final String TAG = "CONSULTA_MEDICAMENTO_FRAGMENT";
     private static final int THREAD_POOL_SIZE = 4;
+    private static final int MIN_CARACTERES_BUSCA = 3;
     private EditText editBusca;
     private Button btnConfirmar;
     private RecyclerView recyclerMedicamentosConsulta;
     private ProtocoloItemAdapter adapter;
-    private List<ProtocoloItemUiState> items = new ArrayList<>();
     private Executor executor;
+
+    private final List<ProtocoloItemUiState> items = new ArrayList<>();
+    private final List<ProtocoloItemUiState> todosItens = new ArrayList<>();
 
     @Nullable
     @Override
@@ -70,9 +68,10 @@ public class ConsultaMedicamentoFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         createExecutor();
         bindViews(view);
-        fetchItems();
         setupAdapter();
+        setupBusca();
         setupClickListeners();
+        fetchItems();
     }
 
     @Override
@@ -82,20 +81,98 @@ public class ConsultaMedicamentoFragment extends Fragment {
         releaseViews();
     }
 
+    private void createExecutor() {
+        executor = new Executor(createExecutorDeThreads(), createHandlerDaMainThread());
+    }
+
     private void bindViews(@NonNull View view) {
         editBusca = view.findViewById(R.id.edit_busca);
         recyclerMedicamentosConsulta = view.findViewById(R.id.recycler_medicamentos_consulta);
         btnConfirmar = view.findViewById(R.id.btn_confirmar);
     }
 
-    private void createExecutor() {
-        executor = new Executor(createExecutorDeThreads(), createHandlerDaMainThread());
+    private void setupAdapter() {
+        adapter = new ProtocoloItemAdapter(items, createProtocoloItemClickListener());
+        setupVerticalRecyclerView(recyclerMedicamentosConsulta, adapter, requireContext());
     }
 
+    private void setupBusca() {
+        editBusca.addTextChangedListener(new SearchTextWatcher(this::handleBusca));
+    }
 
-    private void releaseViews() {
-        editBusca = null;
-        recyclerMedicamentosConsulta = null;
+    private void setupClickListeners() {
+        btnConfirmar.setOnClickListener(v -> navegarParaTraz());
+    }
+
+    private OnProtocoloItemClickListener createProtocoloItemClickListener() {
+        return new OnProtocoloItemClickListener() {
+            @Override
+            public void onInfoClicked(@NonNull ProtocoloItemUiState state) {
+                handleInfoClicked(state);
+            }
+
+            @Override
+            public void onAddClicked(@NonNull ProtocoloItemUiState state) {
+                handleAddClicked(state);
+            }
+        };
+    }
+
+    private void handleInfoClicked(@NonNull ProtocoloItemUiState state) {
+        // TODO: abrir info do medicamento
+    }
+
+    private void handleAddClicked(@NonNull ProtocoloItemUiState state) {
+        // TODO: adicionar item à seleção
+    }
+
+    private void handleBusca() {
+        String termo = getTermoBusca();
+        showItems(hasMinimoCaracteres(termo) ? filtrarPorTermo(termo) : todosItens);
+    }
+
+    private boolean hasMinimoCaracteres(@NonNull String termo) {
+        return termo.length() >= MIN_CARACTERES_BUSCA;
+    }
+
+    private String getTermoBusca() {
+        return editBusca.getText().toString().trim();
+    }
+
+    private List<ProtocoloItemUiState> filtrarPorTermo(@NonNull String termo) {
+        return todosItens.stream()
+                .filter(item -> contemTermo(item, termo))
+                .collect(Collectors.toList());
+    }
+
+    private boolean contemTermo(@NonNull ProtocoloItemUiState item, @NonNull String termo) {
+        return item.getDescricao().toLowerCase().contains(termo.toLowerCase());
+    }
+
+    private void fetchItems() {
+        executor.execute(requireContext(), AppDatabase::protocoloItemDao, ProtocoloItemDao::getAll, this::handleItems, this::handleErroAoBuscarItems);
+    }
+
+    private void handleItems(@NonNull List<ProtocoloItem> protocoloItems) {
+        updateTodosItens(Mapper.fromItensToUiStateList(protocoloItems));
+    }
+
+    private void updateTodosItens(@NonNull List<ProtocoloItemUiState> novos) {
+        todosItens.clear();
+        todosItens.addAll(novos);
+        showItems(todosItens);
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void showItems(@NonNull List<ProtocoloItemUiState> list) {
+        items.clear();
+        items.addAll(list);
+        adapter.notifyDataSetChanged();
+    }
+
+    private void handleErroAoBuscarItems(@NonNull Throwable throwable) {
+        showSnackBarErro(getString(R.string.erro_carregar_items));
+        Log.d(TAG, getString(R.string.erro_carregar_items_protocolo) + throwable.getMessage());
     }
 
     private void showSnackBarErro(@NonNull String message) {
@@ -106,23 +183,6 @@ public class ConsultaMedicamentoFragment extends Fragment {
                 .show();
     }
 
-
-    @SuppressLint("NotifyDataSetChanged")
-    private void showItems(@NonNull List<ProtocoloItemUiState> list) {
-        items.clear();
-        items.addAll(list);
-        adapter.notifyDataSetChanged();
-    }
-
-    private void setupClickListeners() {
-        btnConfirmar.setOnClickListener(v -> navegarParaTraz());
-    }
-
-    private void setupAplicacaoRecyclerView() {
-        adapter = new ProtocoloItemAdapter(items, null);
-        setupVerticalRecyclerView(recyclerMedicamentosConsulta, adapter, requireContext());
-    }
-
     private void navegarParaTraz() {
         getParentFragmentManager().beginTransaction()
                 .setReorderingAllowed(true)
@@ -131,26 +191,16 @@ public class ConsultaMedicamentoFragment extends Fragment {
                 .commit();
     }
 
-    private void setupAdapter() {
-        setupAplicacaoRecyclerView();
+    private void releaseViews() {
+        editBusca = null;
+        recyclerMedicamentosConsulta = null;
+        btnConfirmar = null;
+        adapter = null;
     }
 
     public static void setupVerticalRecyclerView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.Adapter<?> adapter, @NonNull Context context) {
         recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(adapter);
-    }
-
-    private void fetchItems() {
-        executor.execute(requireContext(), AppDatabase::protocoloItemDao, ProtocoloItemDao::getAll, this::handleItems, this::handleErroAoBuscarItems);
-    }
-
-    private void handleItems(@NonNull List<ProtocoloItem> protocoloItems) {
-        showItems(Mapper.fromItensToUiStateList(protocoloItems));
-    }
-
-    private void handleErroAoBuscarItems(@NonNull Throwable throwable) {
-        showSnackBarErro(getString(R.string.erro_carregar_items));
-        Log.d(TAG, getString(R.string.erro_carregar_items_protocolo) + throwable.getMessage());
     }
 
     private ExecutorService createExecutorDeThreads() {
@@ -162,6 +212,29 @@ public class ConsultaMedicamentoFragment extends Fragment {
             return Handler.createAsync(Looper.getMainLooper());
         }
         return new Handler(Looper.getMainLooper());
+    }
+
+    public abstract static class BaseTextWatcher implements TextWatcher {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+        }
+    }
+
+    public static final class SearchTextWatcher extends BaseTextWatcher {
+        private final Runnable onChanged;
+
+        public SearchTextWatcher(@NonNull Runnable onChanged) {
+            this.onChanged = Objects.requireNonNull(onChanged, "onChanged must not be null");
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            onChanged.run();
+        }
     }
 
     private static final class Mapper {
@@ -178,6 +251,7 @@ public class ConsultaMedicamentoFragment extends Fragment {
     }
 
     private static final class Executor implements Closeable {
+
         private final Handler handler;
         private final ExecutorService executor;
         private volatile boolean cancelled = false;

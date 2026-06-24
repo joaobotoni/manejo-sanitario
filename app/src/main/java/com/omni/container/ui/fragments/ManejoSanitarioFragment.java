@@ -59,16 +59,23 @@ public class ManejoSanitarioFragment extends Fragment {
     private static final String TAG = "FRAGMENT_XGP_MANEJO_SANITARIO";
     private static final int THREAD_POOL_SIZE = 4;
     private static final double DOSAGEM_INICIAL = 0.0;
+    private static final double PESO_AUSENTE = 0.0;
     private static final char STATUS_NAO_APLICADO = 'N';
 
     public static final String RESULT_KEY_MEDICAMENTO_AVULSO = "result_medicamento_avulso";
     public static final String ARG_KEY_MEDICAMENTO_AVULSO = "arg_medicamento_avulso";
+    public static final String RESULT_KEY_ANIMAL = "result_animal";
+    public static final String ARG_KEY_COD_ANIMAL = "arg_cod_animal";
+    public static final String ARG_KEY_COD_BOTTOM = "arg_cod_bottom";
+    public static final String ARG_KEY_COD_SYS_BOV = "arg_cod_sys_bov";
+    public static final String ARG_KEY_PESO = "arg_peso";
     private static final String STATE_KEY_APLICACAO_ITEMS = "state_aplicacao_items";
     private static final String STATE_KEY_PROTOCOLO_SELECIONADO = "state_protocolo_selecionado";
 
     private TextView textViewMedicamentos;
     private TextView textProtocoloNome;
     private EditText editTextPeso;
+    private EditText editTextIdentificacao;
     private AutoCompleteTextView autoCompleteTextViewProtocolos;
     private MaterialCardView cardMedicamentoAvulso;
     private MaterialCardView cardProtocoloSelecionado;
@@ -81,6 +88,10 @@ public class ManejoSanitarioFragment extends Fragment {
     private ProtocoloAdapter protocoloAdapter;
     private ProtocoloItemAplicacaoAdapter protocoloItemAplicacaoAdapter;
     private ProtocoloUiState protocoloSelecionado;
+    private String codAnimal;
+    private String codBottom;
+    private String codSysBov;
+    private double peso;
 
     private final List<ProtocoloItemAplicacaoUiState> aplicacaoItems = new ArrayList<>();
     private final List<ProtocoloUiState> protocolos = new ArrayList<>();
@@ -128,8 +139,7 @@ public class ManejoSanitarioFragment extends Fragment {
     private void setupProtocoloDropdown() {
         protocoloAdapter = new ProtocoloAdapter(requireContext(), new ArrayList<>());
         autoCompleteTextViewProtocolos.setAdapter(protocoloAdapter);
-        autoCompleteTextViewProtocolos.setOnItemClickListener((parent, v, position, id) ->
-                configureSelecaoDeProtocolo(position));
+        autoCompleteTextViewProtocolos.setOnItemClickListener((parent, v, position, id) -> configureSelecaoDeProtocolo(position));
     }
 
     private void bindProtocolosNoAdapter() {
@@ -138,7 +148,18 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void setupFragmentResultListener() {
-        getParentFragmentManager().setFragmentResultListener(RESULT_KEY_MEDICAMENTO_AVULSO, getViewLifecycleOwner(), (requestKey, bundle) -> handleMedicamentoRecebido(bundle));
+        setupMedicamentoResultListener();
+        setupAnimalResultListener();
+    }
+
+    private void setupMedicamentoResultListener() {
+        getParentFragmentManager().setFragmentResultListener(RESULT_KEY_MEDICAMENTO_AVULSO, getViewLifecycleOwner(),
+                (requestKey, bundle) -> handleMedicamentoRecebido(bundle));
+    }
+
+    private void setupAnimalResultListener() {
+        getParentFragmentManager().setFragmentResultListener(RESULT_KEY_ANIMAL, getViewLifecycleOwner(),
+                (requestKey, bundle) -> handleAnimalRecebido(bundle));
     }
 
     private void setupAplicacaoRecyclerView() {
@@ -155,6 +176,7 @@ public class ManejoSanitarioFragment extends Fragment {
 
     private void bindViews(@NonNull View view) {
         textViewMedicamentos = view.findViewById(R.id.text_medicamentos_count);
+        editTextIdentificacao = view.findViewById(R.id.edit_identificacao);
         textProtocoloNome = view.findViewById(R.id.text_protocolo_nome);
         editTextPeso = view.findViewById(R.id.edit_peso);
         autoCompleteTextViewProtocolos = view.findViewById(R.id.edit_protocolo);
@@ -284,6 +306,78 @@ public class ManejoSanitarioFragment extends Fragment {
         return BundleCompat.getParcelable(bundle, ARG_KEY_MEDICAMENTO_AVULSO, ProtocoloItemAplicacaoUiState.class);
     }
 
+    private void handleAnimalRecebido(@NonNull Bundle bundle) {
+        if (!isAnimalValido(bundle)) return;
+        updateAnimalIdentificado(bundle);
+    }
+
+    private void updateAnimalIdentificado(@NonNull Bundle bundle) {
+        codAnimal = getCodAnimal(bundle);
+        codBottom = getCodBottom(bundle);
+        codSysBov = getCodSysBov(bundle);
+        peso = getPeso(bundle);
+        bindHintsDoAnimal();
+    }
+
+    private void bindHintsDoAnimal() {
+        setHint(editTextIdentificacao, getIdentificacaoAnimal());
+        setHint(editTextPeso, getPesoFormatado());
+    }
+
+    @NonNull
+    private String getIdentificacaoAnimal() {
+        if (hasTexto(codAnimal)) return codAnimal;
+        if (hasTexto(codBottom)) return codBottom;
+        if (hasTexto(codSysBov)) return codSysBov;
+        return "";
+    }
+
+    @NonNull
+    private String getPesoFormatado() {
+        return String.valueOf(peso);
+    }
+
+    private boolean isAnimalValido(@NonNull Bundle bundle) {
+        return hasAlgumCodigoAnimal(bundle) && hasPeso(bundle);
+    }
+
+    private boolean hasAlgumCodigoAnimal(@NonNull Bundle bundle) {
+        return hasTexto(bundle, ARG_KEY_COD_ANIMAL)
+                || hasTexto(bundle, ARG_KEY_COD_BOTTOM)
+                || hasTexto(bundle, ARG_KEY_COD_SYS_BOV);
+    }
+
+    private boolean hasPeso(@NonNull Bundle bundle) {
+        return getPeso(bundle) > PESO_AUSENTE;
+    }
+
+    private boolean hasTexto(@NonNull Bundle bundle, @NonNull String key) {
+        return hasTexto(bundle.getString(key));
+    }
+
+    private boolean hasTexto(@Nullable String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    @Nullable
+    private String getCodAnimal(@NonNull Bundle bundle) {
+        return bundle.getString(ARG_KEY_COD_ANIMAL);
+    }
+
+    @Nullable
+    private String getCodBottom(@NonNull Bundle bundle) {
+        return bundle.getString(ARG_KEY_COD_BOTTOM);
+    }
+
+    @Nullable
+    private String getCodSysBov(@NonNull Bundle bundle) {
+        return bundle.getString(ARG_KEY_COD_SYS_BOV);
+    }
+
+    private double getPeso(@NonNull Bundle bundle) {
+        return bundle.getDouble(ARG_KEY_PESO, PESO_AUSENTE);
+    }
+
     @SuppressLint("NotifyDataSetChanged")
     private void clearItemsDeAplicacao() {
         aplicacaoItems.clear();
@@ -312,6 +406,7 @@ public class ManejoSanitarioFragment extends Fragment {
         recyclerMedicamentos = null;
         protocoloAdapter = null;
         protocoloItemAplicacaoAdapter = null;
+        editTextIdentificacao = null;
     }
 
     private void saveAplicacaoItems(@NonNull Bundle outState) {
@@ -441,6 +536,11 @@ public class ManejoSanitarioFragment extends Fragment {
         view.setText(context.getResources().getQuantityString(resId, quantity, quantity));
     }
 
+    public static void setHint(@Nullable TextView view, @Nullable CharSequence hint) {
+        if (view == null) return;
+        view.setHint(hint);
+    }
+
     public static void setVisible(boolean visible, @NonNull View... views) {
         int state = toVisibilityState(visible);
         for (View v : views) applyVisibility(v, state);
@@ -500,6 +600,7 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private static final class Executor implements Closeable {
+
         private final Handler handler;
         private final ExecutorService executor;
         private volatile boolean cancelled = false;
@@ -509,7 +610,7 @@ public class ManejoSanitarioFragment extends Fragment {
             this.handler = handler;
         }
 
-        <D, E> void execute(@NonNull Context context, @NonNull Function<AppDatabase, D> daoExtractor, @NonNull Function<D, E> query, @NonNull Consumer<E> onSuccess, @NonNull Consumer<Exception> onError) {
+        <D, E> void execute(@NonNull Context context,   @NonNull Function<AppDatabase, D> daoExtractor, @NonNull Function<D, E> query, @NonNull Consumer<E> onSuccess, @NonNull Consumer<Exception> onError) {
             submit(() -> query.apply(resolveDao(context, daoExtractor)), onSuccess, onError);
         }
 
