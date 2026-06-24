@@ -1,0 +1,40 @@
+<resources>
+    <string name="app_name">container</string>
+
+    <string name="title_dados_animal">Dados do animal</string>
+    <string name="hint_idv_ide">Idv/Ide</string>
+    <string name="hint_peso_kg">Peso (kg)</string>
+    <string name="hint_protocolo_vacinacao">Protocolo de vacinação</string>
+    <string name="title_add_medicamento_avulso">Adicionar medicamento avulso</string>
+    <string name="subtitle_fora_protocolo">Fora de um protocolo</string>
+    <string name="label_medicamentos">Medicamentos</string>
+    <string name="msg_empty_state_medicamentos">Selecione um protocolo ou\nadicione um medicamento avulso</string>
+    <string name="action_salvar">Salvar</string>
+    <string name="cd_add_medicamento_avulso">Adicionar medicamento avulso</string>
+
+    <string name="checkbox_aplicado">Aplicado</string>
+    <string name="checkbox_nao_aplicado">Não aplicado</string>
+    <string name="cd_abrir">Abrir</string>
+    <string name="cd_protocolo">Protocolo</string>
+    <string name="cd_info_protocolo">Informações do protocolo</string>
+    <string name="cd_remover_protocolo">Remover protocolo</string>
+    <string name="cd_sem_medicamentos">Sem medicamentos</string>
+    <string name="cd_remover_medicamento">Remover medicamento</string>
+    <string name="cd_info_medicamento">Informações do medicamento</string>
+    <string name="cd_add_medicamento">Adicionar medicamento</string>
+
+    <string name="format_qtd_medicamentos">%1$d medicamentos</string>
+    <string name="format_qtd_itens">%1$d itens</string>
+    <string name="format_dose">%1$s mL</string>
+    <string name="format_origem_e_dosagem">%1$s · %2$s</string>
+    <string name="erro_carregar_protocolos">Erro ao carregar os protocolos.</string>
+    <string name="erro_carregar_items_protocolo">Erro ao carregar os items do protocolo.</string>
+    <string name="erro_obter_informacoes_animal">Não foi possível obter as informações do animal.</string>
+    <string name="erro_obter_informacoes_item">Não foi possível obter as informações do item selecionado.</string>
+    <string name="protocolo_nome_vazio">s/n</string>
+
+    <plurals name="medicamentos_count">
+        <item quantity="one">%d medicamento</item>
+        <item quantity="other">%d medicamentos</item>
+    </plurals>
+</resources>
