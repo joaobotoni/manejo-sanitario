@@ -45,7 +45,6 @@
             style="?attr/materialCardViewFilledStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
             app:cardBackgroundColor="?attr/colorSecondaryContainer"
             app:layout_constraintBottom_toBottomOf="@id/text_origem_medicamento"
             app:layout_constraintEnd_toStartOf="@id/btn_remover_medicamento"

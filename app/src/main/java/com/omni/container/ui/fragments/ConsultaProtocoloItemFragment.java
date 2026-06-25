@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,34 +29,52 @@ import com.omni.container.R;
 import com.omni.container.data.AppDatabase;
 import com.omni.container.data.dao.ProtocoloItemDao;
 import com.omni.container.data.entities.ProtocoloItem;
+import com.omni.container.ui.adapters.ConsultaItemSelecionadoAdapter;
 import com.omni.container.ui.adapters.ProtocoloItemAdapter;
 import com.omni.container.ui.adapters.ProtocoloItemAdapter.OnProtocoloItemClickListener;
+import com.omni.container.ui.states.OrigemItem;
 import com.omni.container.ui.states.ProtocoloItemUiState;
 
 import java.io.Closeable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class ConsultaProtocoloItemFragment extends Fragment {
     private static final String TAG = "CONSULTA_PROTOCOLO_ITEM_FRAGMENT";
     private static final int THREAD_POOL_SIZE = 4;
     private static final int MIN_CARACTERES_BUSCA = 3;
+    private static final String STATE_KEY_CHECKED_IDS = "state_checked_ids";
+
+    public static final String RESULT_KEY_PROTOCOLO_ITENS_SELECIONADOS = "result_protocolo_itens_selecionados";
+    public static final String ARG_KEY_PROTOCOLO_ITENS_SELECIONADOS = "arg_protocolo_itens_selecionados";
+
+    private static final Set<Integer> pendingCheckedIds = new HashSet<>();
+
     private Executor executor;
     private EditText editBusca;
     private Button btnConfirmar;
+    private TextView textItemsSelecionados;
     private RecyclerView recyclerProtocoloItensConsulta;
+    private RecyclerView recyclerItemsSelecionados;
     private ProtocoloItemAdapter adapter;
+    private ConsultaItemSelecionadoAdapter selectedAdapter;
 
-    private final List<ProtocoloItemUiState> items = new ArrayList<>();
-    private final List<ProtocoloItemUiState> todosItens = new ArrayList<>();
+    private final List<ProtocoloItemUiState> allItems = new ArrayList<>();
+    private final List<ProtocoloItemUiState> displayedItems = new ArrayList<>();
+    private final List<ProtocoloItemUiState> selectedItems = new ArrayList<>();
+    private final Map<Integer, ProtocoloItem> originalItemMap = new HashMap<>();
+    private boolean confirmed;
 
     @Nullable
     @Override
@@ -68,17 +87,34 @@ public class ConsultaProtocoloItemFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         createExecutor();
         bindViews(view);
-        setupAdapter();
+        setupAdapters();
         setupBusca();
         setupClickListeners();
-        fetchItems();
+        initState(savedInstanceState);
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putIntArray(STATE_KEY_CHECKED_IDS, getCheckedIds());
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (!confirmed) {
+            cachePendingSelection();
+        }
         executor.close();
         releaseViews();
+    }
+
+    private int[] getCheckedIds() {
+        int[] ids = new int[selectedItems.size()];
+        for (int i = 0; i < selectedItems.size(); i++) {
+            ids[i] = selectedItems.get(i).getId();
+        }
+        return ids;
     }
 
     private void createExecutor() {
@@ -87,13 +123,56 @@ public class ConsultaProtocoloItemFragment extends Fragment {
 
     private void bindViews(@NonNull View view) {
         editBusca = view.findViewById(R.id.edit_busca);
+        textItemsSelecionados = view.findViewById(R.id.text_items_selecionados);
         recyclerProtocoloItensConsulta = view.findViewById(R.id.recycler_protocolo_itens_consulta);
+        recyclerItemsSelecionados = view.findViewById(R.id.recycler_items_selecionados);
         btnConfirmar = view.findViewById(R.id.btn_confirmar);
     }
 
-    private void setupAdapter() {
-        adapter = new ProtocoloItemAdapter(items, createProtocoloItemClickListener());
+    private void initState(@Nullable Bundle savedInstanceState) {
+        restoreCheckedIds(savedInstanceState);
+        pendingCheckedIds.addAll(restoredCachedIds);
+        fetchItemsSeNecessario();
+    }
+
+    private final Set<Integer> restoredCachedIds = new HashSet<>();
+
+    private void restoreCheckedIds(@Nullable Bundle savedInstanceState) {
+        restoredCachedIds.clear();
+        if (savedInstanceState != null) {
+            int[] ids = savedInstanceState.getIntArray(STATE_KEY_CHECKED_IDS);
+            if (ids != null) {
+                for (int id : ids) restoredCachedIds.add(id);
+                pendingCheckedIds.clear();
+            }
+        }
+        restoredCachedIds.addAll(pendingCheckedIds);
+    }
+
+    private void cachePendingSelection() {
+        pendingCheckedIds.clear();
+        for (ProtocoloItemUiState item : selectedItems) {
+            pendingCheckedIds.add(item.getId());
+        }
+    }
+
+    private void clearPendingSelection() {
+        pendingCheckedIds.clear();
+    }
+
+    private void setupAdapters() {
+        setupBottomAdapter();
+        setupTopAdapter();
+    }
+
+    private void setupBottomAdapter() {
+        adapter = new ProtocoloItemAdapter(displayedItems, createProtocoloItemClickListener());
         setupVerticalRecyclerView(recyclerProtocoloItensConsulta, adapter, requireContext());
+    }
+
+    private void setupTopAdapter() {
+        selectedAdapter = new ConsultaItemSelecionadoAdapter(selectedItems, this::handleItemRemovido);
+        setupVerticalRecyclerView(recyclerItemsSelecionados, selectedAdapter, requireContext());
     }
 
     private void setupBusca() {
@@ -101,7 +180,7 @@ public class ConsultaProtocoloItemFragment extends Fragment {
     }
 
     private void setupClickListeners() {
-        btnConfirmar.setOnClickListener(v -> navegarParaTraz());
+        btnConfirmar.setOnClickListener(v -> handleConfirmar());
     }
 
     private OnProtocoloItemClickListener createProtocoloItemClickListener() {
@@ -109,45 +188,147 @@ public class ConsultaProtocoloItemFragment extends Fragment {
 
             @Override
             public void onInfoClicked(@NonNull ProtocoloItemUiState state) {
-
             }
 
             @Override
             public void onCheckChanged(@NonNull ProtocoloItemUiState state, boolean isChecked) {
-
+                handleCheckChanged(state, isChecked);
             }
         };
     }
 
-    private void handleInfoClicked(@NonNull ProtocoloItemUiState state) {
-        // TODO: abrir info do protocolo item
+    private void handleCheckChanged(@NonNull ProtocoloItemUiState state, boolean isChecked) {
+        ProtocoloItemUiState updated = state.withChecked(isChecked);
+        if (!replaceInList(allItems, state, updated)) return;
+        replaceInList(displayedItems, state, updated);
+        if (isChecked) {
+            attachToSelected(updated);
+        } else {
+            detachFromSelected(state);
+        }
+        updateCounter();
     }
 
-    private void handleAddClicked(@NonNull ProtocoloItemUiState state) {
-        // TODO: adicionar protocolo item à seleção
+    private boolean replaceInList(@NonNull List<ProtocoloItemUiState> list, @NonNull ProtocoloItemUiState oldItem, @NonNull ProtocoloItemUiState newItem) {
+        int index = list.indexOf(oldItem);
+        if (isPosicaoInvalida(index)) return false;
+        list.set(index, newItem);
+        return true;
+    }
+
+    private void attachToSelected(@NonNull ProtocoloItemUiState item) {
+        selectedItems.add(item);
+        selectedAdapter.notifyItemInserted(selectedItems.size() - 1);
+    }
+
+    private void detachFromSelected(@NonNull ProtocoloItemUiState item) {
+        int position = selectedItems.indexOf(item);
+        if (isPosicaoInvalida(position)) return;
+        selectedItems.remove(position);
+        selectedAdapter.notifyItemRemoved(position);
+    }
+
+    private void handleItemRemovido(@NonNull ProtocoloItemUiState state) {
+        ProtocoloItemUiState updated = state.withChecked(false);
+        if (!replaceInList(allItems, state, updated)) return;
+        replaceInList(displayedItems, state, updated);
+        detachFromSelected(state);
+        updateCounter();
+    }
+
+    private void handleConfirmar() {
+        List<ProtocoloItem> selecionados = buildSelectedProtocoloItems();
+        if (selecionados.isEmpty()) return;
+        confirmed = true;
+        clearPendingSelection();
+        sendResult(selecionados);
+        resetState();
+        navegarParaTraz();
+    }
+
+    @NonNull
+    private List<ProtocoloItem> buildSelectedProtocoloItems() {
+        List<ProtocoloItem> selected = new ArrayList<>();
+        for (ProtocoloItemUiState state : allItems) {
+            if (state.isChecked()) {
+                ProtocoloItem original = originalItemMap.get(state.getId());
+                if (original != null) {
+                    original.setSelected(true);
+                    selected.add(original);
+                }
+            }
+        }
+        return selected;
+    }
+
+    private void sendResult(@NonNull List<ProtocoloItem> selecionados) {
+        Bundle bundle = new Bundle();
+        bundle.putParcelableArrayList(ARG_KEY_PROTOCOLO_ITENS_SELECIONADOS, new ArrayList<>(selecionados));
+        getParentFragmentManager().setFragmentResult(RESULT_KEY_PROTOCOLO_ITENS_SELECIONADOS, bundle);
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void resetState() {
+        allItems.clear();
+        originalItemMap.clear();
+        selectedItems.clear();
+        displayedItems.clear();
+        adapter.notifyDataSetChanged();
+        selectedAdapter.notifyDataSetChanged();
+        updateCounter();
+    }
+
+    private void navegarParaTraz() {
+        getParentFragmentManager().popBackStack();
     }
 
     private void handleBusca() {
+        rebuildDisplayedItems();
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void rebuildDisplayedItems() {
+        displayedItems.clear();
         String termo = getTermoBusca();
-        showItems(hasMinimoCaracteres(termo) ? filtrarPorTermo(termo) : todosItens);
+        if (hasMinimoCaracteres(termo)) {
+            for (ProtocoloItemUiState item : allItems) {
+                if (contemTermo(item, termo)) displayedItems.add(item);
+            }
+        } else {
+            displayedItems.addAll(allItems);
+        }
+        adapter.notifyDataSetChanged();
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void rebuildSelectedItems() {
+        selectedItems.clear();
+        for (ProtocoloItemUiState item : allItems) {
+            if (item.isChecked()) selectedItems.add(item);
+        }
+        selectedAdapter.notifyDataSetChanged();
     }
 
     private boolean hasMinimoCaracteres(@NonNull String termo) {
         return termo.length() >= MIN_CARACTERES_BUSCA;
     }
 
+    @NonNull
     private String getTermoBusca() {
         return editBusca.getText().toString().trim();
     }
 
-    private List<ProtocoloItemUiState> filtrarPorTermo(@NonNull String termo) {
-        return todosItens.stream()
-                .filter(item -> contemTermo(item, termo))
-                .collect(Collectors.toList());
-    }
-
     private boolean contemTermo(@NonNull ProtocoloItemUiState item, @NonNull String termo) {
         return item.getDescricao().toLowerCase().contains(termo.toLowerCase());
+    }
+
+    private void fetchItemsSeNecessario() {
+        if (hasItemsCarregados()) return;
+        fetchItems();
+    }
+
+    private boolean hasItemsCarregados() {
+        return !allItems.isEmpty();
     }
 
     private void fetchItems() {
@@ -155,20 +336,35 @@ public class ConsultaProtocoloItemFragment extends Fragment {
     }
 
     private void handleItems(@NonNull List<ProtocoloItem> protocoloItems) {
-        updateTodosItens(Mapper.fromItensToUiStateList(protocoloItems));
+        originalItemMap.clear();
+        for (ProtocoloItem item : protocoloItems) {
+            originalItemMap.put(item.getIdProtocoloItem(), item);
+        }
+        updateAllItems(Mapper.fromItensToUiStateList(protocoloItems));
     }
 
-    private void updateTodosItens(@NonNull List<ProtocoloItemUiState> novos) {
-        todosItens.clear();
-        todosItens.addAll(novos);
-        showItems(todosItens);
+    private void updateAllItems(@NonNull List<ProtocoloItemUiState> novos) {
+        allItems.clear();
+        allItems.addAll(novos);
+        applyCachedSelection();
+        rebuildDisplayedItems();
+        rebuildSelectedItems();
+        updateCounter();
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private void showItems(@NonNull List<ProtocoloItemUiState> list) {
-        items.clear();
-        items.addAll(list);
-        adapter.notifyDataSetChanged();
+    private void applyCachedSelection() {
+        if (restoredCachedIds.isEmpty()) return;
+        for (int i = 0; i < allItems.size(); i++) {
+            if (restoredCachedIds.contains(allItems.get(i).getId())) {
+                allItems.set(i, allItems.get(i).withChecked(true));
+            }
+        }
+        restoredCachedIds.clear();
+    }
+
+    private void updateCounter() {
+        if (textItemsSelecionados == null) return;
+        textItemsSelecionados.setText(getString(R.string.format_qtd_itens_selecionados, selectedItems.size()));
     }
 
     private void handleErroAoBuscarItems(@NonNull Throwable throwable) {
@@ -184,19 +380,18 @@ public class ConsultaProtocoloItemFragment extends Fragment {
                 .show();
     }
 
-    private void navegarParaTraz() {
-        getParentFragmentManager().beginTransaction()
-                .setReorderingAllowed(true)
-                .addToBackStack(null)
-                .replace(R.id.fragment_container_view, new ManejoSanitarioFragment())
-                .commit();
-    }
-
     private void releaseViews() {
         editBusca = null;
+        textItemsSelecionados = null;
         recyclerProtocoloItensConsulta = null;
+        recyclerItemsSelecionados = null;
         btnConfirmar = null;
         adapter = null;
+        selectedAdapter = null;
+    }
+
+    private boolean isPosicaoInvalida(int position) {
+        return position == RecyclerView.NO_POSITION || position < 0;
     }
 
     public static void setupVerticalRecyclerView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.Adapter<?> adapter, @NonNull Context context) {
@@ -241,13 +436,20 @@ public class ConsultaProtocoloItemFragment extends Fragment {
     private static final class Mapper {
 
         static List<ProtocoloItemUiState> fromItensToUiStateList(@NonNull List<ProtocoloItem> itens) {
-            return itens.stream()
-                    .map(Mapper::fromProtocoloItemToUiState)
-                    .collect(Collectors.toList());
+            List<ProtocoloItemUiState> result = new ArrayList<>(itens.size());
+            for (ProtocoloItem item : itens) {
+                result.add(fromProtocoloItemToUiState(item));
+            }
+            return result;
         }
 
         private static ProtocoloItemUiState fromProtocoloItemToUiState(@NonNull ProtocoloItem protocoloItem) {
-            return new ProtocoloItemUiState(protocoloItem.getIdProtocoloItem(), protocoloItem.getDescricao(), false);
+            return new ProtocoloItemUiState(
+                    protocoloItem.getIdProtocoloItem(),
+                    protocoloItem.getDescricao(),
+                    OrigemItem.AVULSO,
+                    false
+            );
         }
     }
 

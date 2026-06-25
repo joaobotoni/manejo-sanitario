@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 
@@ -20,11 +21,25 @@ import java.util.List;
 public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<ProtocoloItemSelecionadoAdapter.ViewHolder> {
     private static final char STATUS_APLICADO = 'S';
     private static final char STATUS_NAO_APLICADO = 'N';
+
+    public interface OnItemRemovidoListener {
+        void onItemRemovido(@NonNull ProtocoloItemSelecionadoUiState item, int position);
+    }
+
     @NonNull
     private final List<ProtocoloItemSelecionadoUiState> list;
 
+    @Nullable
+    private final OnItemRemovidoListener removidoListener;
+
     public ProtocoloItemSelecionadoAdapter(@NonNull List<ProtocoloItemSelecionadoUiState> list) {
         this.list = list;
+        this.removidoListener = null;
+    }
+
+    public ProtocoloItemSelecionadoAdapter(@NonNull List<ProtocoloItemSelecionadoUiState> list, @Nullable OnItemRemovidoListener removidoListener) {
+        this.list = list;
+        this.removidoListener = removidoListener;
     }
 
     @NonNull
@@ -112,8 +127,12 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
         private void removeCurrentItem() {
             int position = getBindingAdapterPosition();
             if (position == RecyclerView.NO_POSITION) return;
+            ProtocoloItemSelecionadoUiState item = list.get(position);
             list.remove(position);
             notifyItemRemoved(position);
+            if (removidoListener != null) {
+                removidoListener.onItemRemovido(item, position);
+            }
         }
     }
 }

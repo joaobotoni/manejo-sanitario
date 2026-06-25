@@ -40,6 +40,7 @@ import com.omni.container.data.entities.ProtocoloItem;
 import com.omni.container.ui.adapters.ProtocoloAdapter;
 import com.omni.container.ui.adapters.ProtocoloItemSelecionadoAdapter;
 
+import com.omni.container.ui.states.OrigemItem;
 import com.omni.container.ui.states.ProtocoloItemSelecionadoUiState;
 import com.omni.container.ui.states.ProtocoloUiState;
 
@@ -63,8 +64,8 @@ public class ManejoSanitarioFragment extends Fragment {
     private static final double PESO_AUSENTE = 0.0;
     private static final char STATUS_NAO_APLICADO = 'N';
 
-    public static final String RESULT_KEY_PROTOCOLO_ITEM_SELECIONADO_AVULSO = "result_protocolo_item_selecionado_avulso";
-    public static final String ARG_KEY_PROTOCOLO_ITEM_SELECIONADO_AVULSO = "arg_protocolo_item_selecionado_avulso";
+    public static final String RESULT_KEY_PROTOCOLO_ITENS_SELECIONADOS = "result_protocolo_itens_selecionados";
+    public static final String ARG_KEY_PROTOCOLO_ITENS_SELECIONADOS = "arg_protocolo_itens_selecionados";
     public static final String RESULT_KEY_ANIMAL = "result_animal";
     public static final String ARG_KEY_COD_ANIMAL = "arg_cod_animal";
     public static final String ARG_KEY_COD_BOTTOM = "arg_cod_bottom";
@@ -149,13 +150,13 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void setupFragmentResultListener() {
-        setupProtocoloItemResultListener();
+        setupProtocoloItensResultListener();
         setupAnimalResultListener();
     }
 
-    private void setupProtocoloItemResultListener() {
-        getParentFragmentManager().setFragmentResultListener(RESULT_KEY_PROTOCOLO_ITEM_SELECIONADO_AVULSO, getViewLifecycleOwner(),
-                (requestKey, bundle) -> handleProtocoloItemRecebido(bundle));
+    private void setupProtocoloItensResultListener() {
+        getParentFragmentManager().setFragmentResultListener(RESULT_KEY_PROTOCOLO_ITENS_SELECIONADOS, getViewLifecycleOwner(),
+                (requestKey, bundle) -> handleProtocoloItensRecebidos(bundle));
     }
 
     private void setupAnimalResultListener() {
@@ -164,7 +165,7 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void setupAplicacaoRecyclerView() {
-        protocoloItemSelecionadoAdapter = new ProtocoloItemSelecionadoAdapter(aplicacaoItems);
+        protocoloItemSelecionadoAdapter = new ProtocoloItemSelecionadoAdapter(aplicacaoItems, this::handleItemRemovido);
         setupVerticalRecyclerView(recyclerViewProtocoloItensSelecionados, protocoloItemSelecionadoAdapter, requireContext());
     }
 
@@ -237,18 +238,27 @@ public class ManejoSanitarioFragment extends Fragment {
 
     @SuppressLint("NotifyDataSetChanged")
     private void showNovosItemsSelecionados(@NonNull List<ProtocoloItemSelecionadoUiState> novosItems) {
-        aplicacaoItems.clear();
+        removeProtocoloItems();
         aplicacaoItems.addAll(novosItems);
         protocoloItemSelecionadoAdapter.notifyDataSetChanged();
         showContadorItems();
         applyVisibilidadeDeItens();
     }
 
+    private void removeProtocoloItems() {
+        aplicacaoItems.removeIf(item -> item.getOrigem() == PROTOCOLO);
+    }
+
     private void applyVisibilidadeDeItens() {
         boolean hasItems = !aplicacaoItems.isEmpty();
+        boolean hasProtocolo = isProtocoloSelecionado();
         setVisible(!hasItems, cardEmptyState);
         setVisible(hasItems, recyclerViewProtocoloItensSelecionados);
-        setVisible(hasItems, cardProtocoloSelecionado);
+        setVisible(hasProtocolo, cardProtocoloSelecionado);
+    }
+
+    private boolean isProtocoloSelecionado() {
+        return protocoloSelecionado != null;
     }
 
     private void navegarParaConsultaProtocoloItem() {
@@ -269,17 +279,19 @@ public class ManejoSanitarioFragment extends Fragment {
     private void updateProtocoloSelecionado(@NonNull ProtocoloUiState protocolo) {
         protocoloSelecionado = protocolo;
         bindProtocoloSelecionado();
+        applyVisibilidadeDeItens();
     }
 
     private void configureAcaoDeSalvar() {
         if (isPesoVazio()) return;
-        // TODO: persistir
     }
 
     private void configureRemocaoDeProtocolo() {
-        if (!hasItemDeProtocolo()) return;
-        clearItemsDeAplicacao();
+        if (!isProtocoloSelecionado()) return;
+        removeProtocoloItems();
         clearSelecaoDeProtocolo();
+        protocoloItemSelecionadoAdapter.notifyDataSetChanged();
+        showContadorItems();
         applyVisibilidadeDeItens();
     }
 
@@ -295,16 +307,23 @@ public class ManejoSanitarioFragment extends Fragment {
         bindRemocaoDeItemNoAdapter(index);
     }
 
-    private void handleProtocoloItemRecebido(@NonNull Bundle bundle) {
-        ProtocoloItemSelecionadoUiState protocoloItemSelecionado = getProtocoloItemSelecionadoDoBundle(bundle);
-        if (isInvalido(protocoloItemSelecionado)) return;
-        attachProtocoloItemSelecionadoAvulso(protocoloItemSelecionado);
+    private void handleProtocoloItensRecebidos(@NonNull Bundle bundle) {
+        List<ProtocoloItem> itens = getProtocoloItensSelecionadosDoBundle(bundle);
+        if (isListaVazia(itens)) return;
+        for (ProtocoloItem item : itens) {
+            attachProtocoloItemSelecionadoAvulso(Mapper.fromProtocoloItemToUiStateAvulso(item));
+        }
+        applyVisibilidadeDeItens();
+    }
+
+    private void handleItemRemovido(@NonNull ProtocoloItemSelecionadoUiState item, int position) {
+        showContadorItems();
         applyVisibilidadeDeItens();
     }
 
     @Nullable
-    private ProtocoloItemSelecionadoUiState getProtocoloItemSelecionadoDoBundle(@NonNull Bundle bundle) {
-        return BundleCompat.getParcelable(bundle, ARG_KEY_PROTOCOLO_ITEM_SELECIONADO_AVULSO, ProtocoloItemSelecionadoUiState.class);
+    private List<ProtocoloItem> getProtocoloItensSelecionadosDoBundle(@NonNull Bundle bundle) {
+        return BundleCompat.getParcelableArrayList(bundle, ARG_KEY_PROTOCOLO_ITENS_SELECIONADOS, ProtocoloItem.class);
     }
 
     private void handleAnimalRecebido(@NonNull Bundle bundle) {
@@ -377,13 +396,6 @@ public class ManejoSanitarioFragment extends Fragment {
 
     private double getPeso(@NonNull Bundle bundle) {
         return bundle.getDouble(ARG_KEY_PESO, PESO_AUSENTE);
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    private void clearItemsDeAplicacao() {
-        aplicacaoItems.clear();
-        protocoloItemSelecionadoAdapter.notifyDataSetChanged();
-        showContadorItems();
     }
 
     private void clearSelecaoDeProtocolo() {
@@ -505,14 +517,6 @@ public class ManejoSanitarioFragment extends Fragment {
         return protocoloAdapter.getItem(position);
     }
 
-    private boolean hasItemDeProtocolo() {
-        return aplicacaoItems.stream().anyMatch(this::isItemDeProtocolo);
-    }
-
-    private boolean isItemDeProtocolo(@NonNull ProtocoloItemSelecionadoUiState item) {
-        return item.getOrigem() == PROTOCOLO;
-    }
-
     private boolean isInvalido(@Nullable Object value) {
         return value == null;
     }
@@ -598,6 +602,10 @@ public class ManejoSanitarioFragment extends Fragment {
         private static ProtocoloItemSelecionadoUiState fromItemToUiStateAplicacao(@NonNull ProtocoloItem item) {
             return new ProtocoloItemSelecionadoUiState(item.getDescricao(), PROTOCOLO, DOSAGEM_INICIAL, STATUS_NAO_APLICADO);
         }
+
+        static ProtocoloItemSelecionadoUiState fromProtocoloItemToUiStateAvulso(@NonNull ProtocoloItem item) {
+            return new ProtocoloItemSelecionadoUiState(item.getDescricao(), OrigemItem.AVULSO, DOSAGEM_INICIAL, STATUS_NAO_APLICADO);
+        }
     }
 
     private static final class Executor implements Closeable {
@@ -611,7 +619,7 @@ public class ManejoSanitarioFragment extends Fragment {
             this.handler = handler;
         }
 
-        <D, E> void execute(@NonNull Context context,   @NonNull Function<AppDatabase, D> daoExtractor, @NonNull Function<D, E> query, @NonNull Consumer<E> onSuccess, @NonNull Consumer<Exception> onError) {
+        <D, E> void execute(@NonNull Context context, @NonNull Function<AppDatabase, D> daoExtractor, @NonNull Function<D, E> query, @NonNull Consumer<E> onSuccess, @NonNull Consumer<Exception> onError) {
             submit(() -> query.apply(resolveDao(context, daoExtractor)), onSuccess, onError);
         }
 
@@ -658,4 +666,3 @@ public class ManejoSanitarioFragment extends Fragment {
         }
     }
 }
-
