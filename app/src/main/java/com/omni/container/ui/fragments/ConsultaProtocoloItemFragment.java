@@ -30,15 +30,15 @@ import com.omni.container.data.AppDatabase;
 import com.omni.container.data.dao.ProtocoloItemDao;
 import com.omni.container.data.entities.ProtocoloItem;
 import com.omni.container.ui.adapters.ConsultaItemSelecionadoAdapter;
-import com.omni.container.ui.adapters.ProtocoloItemAdapter;
-import com.omni.container.ui.adapters.ProtocoloItemAdapter.OnProtocoloItemClickListener;
+import com.omni.container.ui.adapters.ItemMedicamentoAdapter;
+import com.omni.container.ui.adapters.ItemMedicamentoAdapter.OnProtocoloItemClickListener;
 import com.omni.container.ui.states.OrigemItem;
-import com.omni.container.ui.states.ProtocoloItemUiState;
+import com.omni.container.ui.states.ItemMedicamentoUiState;
 
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,30 +51,30 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class ConsultaProtocoloItemFragment extends Fragment {
-    private static final String TAG = "CONSULTA_PROTOCOLO_ITEM_FRAGMENT";
+    private static final String TAG = "FRAG_CONSULTA_PROTOCOLO";
     private static final int THREAD_POOL_SIZE = 4;
     private static final int MIN_CARACTERES_BUSCA = 3;
-    private static final String STATE_KEY_CHECKED_IDS = "state_checked_ids";
+    private static final String STATE_KEY_SELECTED_IDS = "state_selected_ids";
 
     public static final String RESULT_KEY_PROTOCOLO_ITENS_SELECIONADOS = "result_protocolo_itens_selecionados";
     public static final String ARG_KEY_PROTOCOLO_ITENS_SELECIONADOS = "arg_protocolo_itens_selecionados";
 
-    private static final Set<Integer> pendingCheckedIds = new HashSet<>();
-
-    private Executor executor;
+    // Views
     private EditText editBusca;
     private Button btnConfirmar;
     private TextView textItemsSelecionados;
-    private RecyclerView recyclerProtocoloItensConsulta;
-    private RecyclerView recyclerItemsSelecionados;
-    private ProtocoloItemAdapter adapter;
-    private ConsultaItemSelecionadoAdapter selectedAdapter;
+    private RecyclerView recyclerConsulta;
+    private RecyclerView recyclerSelecionados;
 
-    private final List<ProtocoloItemUiState> allItems = new ArrayList<>();
-    private final List<ProtocoloItemUiState> displayedItems = new ArrayList<>();
-    private final List<ProtocoloItemUiState> selectedItems = new ArrayList<>();
-    private final Map<Integer, ProtocoloItem> originalItemMap = new HashMap<>();
-    private boolean confirmed;
+    private Executor executor;
+    private ItemMedicamentoAdapter consultaAdapter;
+    private ConsultaItemSelecionadoAdapter selecionadosAdapter;
+
+    private final Map<Integer, ProtocoloItem> originalItemsMap = new LinkedHashMap<>();
+    private final List<ItemMedicamentoUiState> masterItems = new ArrayList<>();
+    private final List<ItemMedicamentoUiState> displayedItems = new ArrayList<>();
+    private final List<ItemMedicamentoUiState> selectedItems = new ArrayList<>();
+    private final Set<Integer> selectedIds = new LinkedHashSet<>();
 
     @Nullable
     @Override
@@ -85,232 +85,196 @@ public class ConsultaProtocoloItemFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        createExecutor();
-        bindViews(view);
+        setupExecutor();
+        setupViews(view);
         setupAdapters();
-        setupBusca();
-        setupClickListeners();
-        initState(savedInstanceState);
+        setupListeners();
+        setupInitialState(savedInstanceState);
     }
 
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putIntArray(STATE_KEY_CHECKED_IDS, getCheckedIds());
+        outState.putIntArray(STATE_KEY_SELECTED_IDS, CollectionUtils.toIntArray(selectedIds));
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (!confirmed) {
-            cachePendingSelection();
-        }
         executor.close();
-        releaseViews();
+        clearViews();
     }
 
-    private int[] getCheckedIds() {
-        int[] ids = new int[selectedItems.size()];
-        for (int i = 0; i < selectedItems.size(); i++) {
-            ids[i] = selectedItems.get(i).getId();
-        }
-        return ids;
-    }
 
-    private void createExecutor() {
+    private void setupExecutor() {
         executor = new Executor(createExecutorDeThreads(), createHandlerDaMainThread());
     }
 
-    private void bindViews(@NonNull View view) {
+    private void setupViews(@NonNull View view) {
         editBusca = view.findViewById(R.id.edit_busca);
         textItemsSelecionados = view.findViewById(R.id.text_items_selecionados);
-        recyclerProtocoloItensConsulta = view.findViewById(R.id.recycler_protocolo_itens_consulta);
-        recyclerItemsSelecionados = view.findViewById(R.id.recycler_items_selecionados);
+        recyclerConsulta = view.findViewById(R.id.recycler_protocolo_itens_consulta);
+        recyclerSelecionados = view.findViewById(R.id.recycler_items_selecionados);
         btnConfirmar = view.findViewById(R.id.btn_confirmar);
     }
 
-    private void initState(@Nullable Bundle savedInstanceState) {
-        restoreCheckedIds(savedInstanceState);
-        pendingCheckedIds.addAll(restoredCachedIds);
-        fetchItemsSeNecessario();
-    }
-
-    private final Set<Integer> restoredCachedIds = new HashSet<>();
-
-    private void restoreCheckedIds(@Nullable Bundle savedInstanceState) {
-        restoredCachedIds.clear();
-        if (savedInstanceState != null) {
-            int[] ids = savedInstanceState.getIntArray(STATE_KEY_CHECKED_IDS);
-            if (ids != null) {
-                for (int id : ids) restoredCachedIds.add(id);
-                pendingCheckedIds.clear();
-            }
-        }
-        restoredCachedIds.addAll(pendingCheckedIds);
-    }
-
-    private void cachePendingSelection() {
-        pendingCheckedIds.clear();
-        for (ProtocoloItemUiState item : selectedItems) {
-            pendingCheckedIds.add(item.getId());
-        }
-    }
-
-    private void clearPendingSelection() {
-        pendingCheckedIds.clear();
-    }
-
     private void setupAdapters() {
-        setupBottomAdapter();
-        setupTopAdapter();
+        consultaAdapter = new ItemMedicamentoAdapter(displayedItems, createConsultaListener());
+        ViewUtils.setupVerticalRecyclerView(recyclerConsulta, consultaAdapter, requireContext());
+
+        selecionadosAdapter = new ConsultaItemSelecionadoAdapter(selectedItems, this::handleItemRemovido);
+        ViewUtils.setupVerticalRecyclerView(recyclerSelecionados, selecionadosAdapter, requireContext());
     }
 
-    private void setupBottomAdapter() {
-        adapter = new ProtocoloItemAdapter(displayedItems, createProtocoloItemClickListener());
-        setupVerticalRecyclerView(recyclerProtocoloItensConsulta, adapter, requireContext());
-    }
-
-    private void setupTopAdapter() {
-        selectedAdapter = new ConsultaItemSelecionadoAdapter(selectedItems, this::handleItemRemovido);
-        setupVerticalRecyclerView(recyclerItemsSelecionados, selectedAdapter, requireContext());
-    }
-
-    private void setupBusca() {
-        editBusca.addTextChangedListener(new SearchTextWatcher(this::handleBusca));
-    }
-
-    private void setupClickListeners() {
+    private void setupListeners() {
         btnConfirmar.setOnClickListener(v -> handleConfirmar());
+        editBusca.addTextChangedListener(new SearchTextWatcher(this::refreshDisplayedItems));
     }
 
-    private OnProtocoloItemClickListener createProtocoloItemClickListener() {
-        return new OnProtocoloItemClickListener() {
+    private void setupInitialState(@Nullable Bundle savedInstanceState) {
+        restoreSelectedIdsState(savedInstanceState);
+        bindCurrentState();
+        fetchItemsIfNeeded();
+    }
 
+    private void fetchItemsIfNeeded() {
+        if (!masterItems.isEmpty()) return;
+
+        executor.execute(requireContext(),
+                AppDatabase::protocoloItemDao,
+                ProtocoloItemDao::getAll,
+                this::handleItemsFetchSuccess,
+                this::handleItemsFetchError);
+    }
+
+    private void handleItemsFetchSuccess(@NonNull List<ProtocoloItem> protocoloItems) {
+        originalItemsMap.clear();
+        masterItems.clear();
+
+        for (ProtocoloItem item : protocoloItems) {
+            originalItemsMap.put(item.getIdProtocoloItem(), item);
+            masterItems.add(Mapper.fromProtocoloItemToUiState(item));
+        }
+
+        bindCurrentState();
+    }
+
+    private void handleItemsFetchError(@NonNull Throwable throwable) {
+        showErrorSnackBar(getString(R.string.erro_carregar_protocolo_itens));
+        Log.e(TAG, "Erro ao carregar itens: ", throwable);
+    }
+
+    private void bindCurrentState() {
+        refreshDisplayedItems();
+        refreshSelectedItems();
+        updateSelectedCounter();
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void refreshDisplayedItems() {
+        displayedItems.clear();
+        String termoBusca = getTermoBusca();
+        boolean validarFiltro = termoBusca.length() >= MIN_CARACTERES_BUSCA;
+
+        for (ItemMedicamentoUiState item : masterItems) {
+            if (!validarFiltro || matchesTermo(item, termoBusca)) {
+                displayedItems.add(projetarSelecaoParaView(item));
+            }
+        }
+        consultaAdapter.notifyDataSetChanged();
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void refreshSelectedItems() {
+        selectedItems.clear();
+        for (Integer id : selectedIds) {
+            ProtocoloItem original = originalItemsMap.get(id);
+            if (original != null) {
+                selectedItems.add(Mapper.fromProtocoloItemToUiState(original).withChecked(true));
+            }
+        }
+        selecionadosAdapter.notifyDataSetChanged();
+    }
+
+    private void updateSelectedCounter() {
+        if (textItemsSelecionados != null) {
+            textItemsSelecionados.setText(getString(R.string.format_qtd_itens_selecionados, selectedIds.size()));
+        }
+    }
+
+
+    private OnProtocoloItemClickListener createConsultaListener() {
+        return new OnProtocoloItemClickListener() {
             @Override
-            public void onInfoClicked(@NonNull ProtocoloItemUiState state) {
+            public void onInfoClicked(@NonNull ItemMedicamentoUiState state) {
+                // TODO: Abrir info do item (Ex: InfoAplicacaoFragment)
             }
 
             @Override
-            public void onCheckChanged(@NonNull ProtocoloItemUiState state, boolean isChecked) {
-                handleCheckChanged(state, isChecked);
+            public void onCheckChanged(@NonNull ItemMedicamentoUiState state, boolean isChecked) {
+                handleCheckChanged(state.getId(), isChecked);
             }
         };
     }
 
-    private void handleCheckChanged(@NonNull ProtocoloItemUiState state, boolean isChecked) {
-        ProtocoloItemUiState updated = state.withChecked(isChecked);
-        if (!replaceInList(allItems, state, updated)) return;
-        replaceInList(displayedItems, state, updated);
+    private void handleItemRemovido(@NonNull ItemMedicamentoUiState state) {
+        handleCheckChanged(state.getId(), false);
+    }
+
+    private void handleCheckChanged(int id, boolean isChecked) {
         if (isChecked) {
-            attachToSelected(updated);
+            selectedIds.add(id);
         } else {
-            detachFromSelected(state);
+            selectedIds.remove(id);
         }
-        updateCounter();
-    }
-
-    private boolean replaceInList(@NonNull List<ProtocoloItemUiState> list, @NonNull ProtocoloItemUiState oldItem, @NonNull ProtocoloItemUiState newItem) {
-        int index = list.indexOf(oldItem);
-        if (isPosicaoInvalida(index)) return false;
-        list.set(index, newItem);
-        return true;
-    }
-
-    private void attachToSelected(@NonNull ProtocoloItemUiState item) {
-        selectedItems.add(item);
-        selectedAdapter.notifyItemInserted(selectedItems.size() - 1);
-    }
-
-    private void detachFromSelected(@NonNull ProtocoloItemUiState item) {
-        int position = selectedItems.indexOf(item);
-        if (isPosicaoInvalida(position)) return;
-        selectedItems.remove(position);
-        selectedAdapter.notifyItemRemoved(position);
-    }
-
-    private void handleItemRemovido(@NonNull ProtocoloItemUiState state) {
-        ProtocoloItemUiState updated = state.withChecked(false);
-        if (!replaceInList(allItems, state, updated)) return;
-        replaceInList(displayedItems, state, updated);
-        detachFromSelected(state);
-        updateCounter();
+        updateDisplayedItemState(id, isChecked);
+        refreshSelectedItems();
+        updateSelectedCounter();
     }
 
     private void handleConfirmar() {
-        List<ProtocoloItem> selecionados = buildSelectedProtocoloItems();
+        List<ProtocoloItem> selecionados = buildSelectedEntities();
         if (selecionados.isEmpty()) return;
-        confirmed = true;
-        clearPendingSelection();
-        sendResult(selecionados);
-        resetState();
-        navegarParaTraz();
+
+        sendResultToParent(selecionados);
+        navigateBack();
+    }
+
+    private void updateDisplayedItemState(int id, boolean isChecked) {
+        int index = getIndexOfDisplayedItem(id);
+        if (index == RecyclerView.NO_POSITION) return;
+
+        ItemMedicamentoUiState updatedItem = displayedItems.get(index).withChecked(isChecked);
+        displayedItems.set(index, updatedItem);
+        consultaAdapter.notifyItemChanged(index);
     }
 
     @NonNull
-    private List<ProtocoloItem> buildSelectedProtocoloItems() {
-        List<ProtocoloItem> selected = new ArrayList<>();
-        for (ProtocoloItemUiState state : allItems) {
-            if (state.isChecked()) {
-                ProtocoloItem original = originalItemMap.get(state.getId());
-                if (original != null) {
-                    original.setSelected(true);
-                    selected.add(original);
-                }
+    private List<ProtocoloItem> buildSelectedEntities() {
+        List<ProtocoloItem> result = new ArrayList<>(selectedIds.size());
+        for (Integer id : selectedIds) {
+            ProtocoloItem item = originalItemsMap.get(id);
+            if (item != null) {
+                item.setSelected(true);
+                result.add(item);
             }
         }
-        return selected;
+        return result;
     }
 
-    private void sendResult(@NonNull List<ProtocoloItem> selecionados) {
-        Bundle bundle = new Bundle();
-        bundle.putParcelableArrayList(ARG_KEY_PROTOCOLO_ITENS_SELECIONADOS, new ArrayList<>(selecionados));
-        getParentFragmentManager().setFragmentResult(RESULT_KEY_PROTOCOLO_ITENS_SELECIONADOS, bundle);
+    private ItemMedicamentoUiState projetarSelecaoParaView(@NonNull ItemMedicamentoUiState item) {
+        return selectedIds.contains(item.getId()) ? item.withChecked(true) : item;
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private void resetState() {
-        allItems.clear();
-        originalItemMap.clear();
-        selectedItems.clear();
-        displayedItems.clear();
-        adapter.notifyDataSetChanged();
-        selectedAdapter.notifyDataSetChanged();
-        updateCounter();
-    }
-
-    private void navegarParaTraz() {
-        getParentFragmentManager().popBackStack();
-    }
-
-    private void handleBusca() {
-        rebuildDisplayedItems();
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    private void rebuildDisplayedItems() {
-        displayedItems.clear();
-        String termo = getTermoBusca();
-        if (hasMinimoCaracteres(termo)) {
-            for (ProtocoloItemUiState item : allItems) {
-                if (contemTermo(item, termo)) displayedItems.add(item);
-            }
-        } else {
-            displayedItems.addAll(allItems);
+    private int getIndexOfDisplayedItem(int id) {
+        for (int i = 0; i < displayedItems.size(); i++) {
+            if (displayedItems.get(i).getId() == id) return i;
         }
-        adapter.notifyDataSetChanged();
+        return RecyclerView.NO_POSITION;
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private void rebuildSelectedItems() {
-        selectedItems.clear();
-        for (ProtocoloItemUiState item : allItems) {
-            if (item.isChecked()) selectedItems.add(item);
-        }
-        selectedAdapter.notifyDataSetChanged();
-    }
-
-    private boolean hasMinimoCaracteres(@NonNull String termo) {
-        return termo.length() >= MIN_CARACTERES_BUSCA;
+    private boolean matchesTermo(@NonNull ItemMedicamentoUiState item, @NonNull String termo) {
+        return item.getDescricao().toLowerCase().contains(termo.toLowerCase());
     }
 
     @NonNull
@@ -318,61 +282,25 @@ public class ConsultaProtocoloItemFragment extends Fragment {
         return editBusca.getText().toString().trim();
     }
 
-    private boolean contemTermo(@NonNull ProtocoloItemUiState item, @NonNull String termo) {
-        return item.getDescricao().toLowerCase().contains(termo.toLowerCase());
+    private void sendResultToParent(@NonNull List<ProtocoloItem> selecionados) {
+        Bundle bundle = new Bundle();
+        bundle.putParcelableArrayList(ARG_KEY_PROTOCOLO_ITENS_SELECIONADOS, new ArrayList<>(selecionados));
+        getParentFragmentManager().setFragmentResult(RESULT_KEY_PROTOCOLO_ITENS_SELECIONADOS, bundle);
     }
 
-    private void fetchItemsSeNecessario() {
-        if (hasItemsCarregados()) return;
-        fetchItems();
+    private void navigateBack() {
+        getParentFragmentManager().popBackStack();
     }
 
-    private boolean hasItemsCarregados() {
-        return !allItems.isEmpty();
+    private void restoreSelectedIdsState(@Nullable Bundle savedInstanceState) {
+        if (savedInstanceState == null) return;
+        int[] ids = savedInstanceState.getIntArray(STATE_KEY_SELECTED_IDS);
+        if (ids == null) return;
+        selectedIds.clear();
+        for (int id : ids) selectedIds.add(id);
     }
 
-    private void fetchItems() {
-        executor.execute(requireContext(), AppDatabase::protocoloItemDao, ProtocoloItemDao::getAll, this::handleItems, this::handleErroAoBuscarItems);
-    }
-
-    private void handleItems(@NonNull List<ProtocoloItem> protocoloItems) {
-        originalItemMap.clear();
-        for (ProtocoloItem item : protocoloItems) {
-            originalItemMap.put(item.getIdProtocoloItem(), item);
-        }
-        updateAllItems(Mapper.fromItensToUiStateList(protocoloItems));
-    }
-
-    private void updateAllItems(@NonNull List<ProtocoloItemUiState> novos) {
-        allItems.clear();
-        allItems.addAll(novos);
-        applyCachedSelection();
-        rebuildDisplayedItems();
-        rebuildSelectedItems();
-        updateCounter();
-    }
-
-    private void applyCachedSelection() {
-        if (restoredCachedIds.isEmpty()) return;
-        for (int i = 0; i < allItems.size(); i++) {
-            if (restoredCachedIds.contains(allItems.get(i).getId())) {
-                allItems.set(i, allItems.get(i).withChecked(true));
-            }
-        }
-        restoredCachedIds.clear();
-    }
-
-    private void updateCounter() {
-        if (textItemsSelecionados == null) return;
-        textItemsSelecionados.setText(getString(R.string.format_qtd_itens_selecionados, selectedItems.size()));
-    }
-
-    private void handleErroAoBuscarItems(@NonNull Throwable throwable) {
-        showSnackBarErro(getString(R.string.erro_carregar_protocolo_itens));
-        Log.d(TAG, getString(R.string.erro_carregar_protocolo_itens) + throwable.getMessage());
-    }
-
-    private void showSnackBarErro(@NonNull String message) {
+    private void showErrorSnackBar(@NonNull String message) {
         View view = requireView();
         Snackbar.make(view, message, Snackbar.LENGTH_LONG)
                 .setBackgroundTint(ContextCompat.getColor(view.getContext(), android.R.color.holo_red_dark))
@@ -380,23 +308,14 @@ public class ConsultaProtocoloItemFragment extends Fragment {
                 .show();
     }
 
-    private void releaseViews() {
+    private void clearViews() {
         editBusca = null;
         textItemsSelecionados = null;
-        recyclerProtocoloItensConsulta = null;
-        recyclerItemsSelecionados = null;
+        recyclerConsulta = null;
+        recyclerSelecionados = null;
         btnConfirmar = null;
-        adapter = null;
-        selectedAdapter = null;
-    }
-
-    private boolean isPosicaoInvalida(int position) {
-        return position == RecyclerView.NO_POSITION || position < 0;
-    }
-
-    public static void setupVerticalRecyclerView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.Adapter<?> adapter, @NonNull Context context) {
-        recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
-        recyclerView.setAdapter(adapter);
+        consultaAdapter = null;
+        selecionadosAdapter = null;
     }
 
     private ExecutorService createExecutorDeThreads() {
@@ -410,21 +329,33 @@ public class ConsultaProtocoloItemFragment extends Fragment {
         return new Handler(Looper.getMainLooper());
     }
 
-    public abstract static class BaseTextWatcher implements TextWatcher {
-        @Override
-        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-        }
 
-        @Override
-        public void afterTextChanged(Editable s) {
+    private static final class ViewUtils {
+        static void setupVerticalRecyclerView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.Adapter<?> adapter, @NonNull Context context) {
+            recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+            recyclerView.setAdapter(adapter);
         }
+    }
+
+    private static final class CollectionUtils {
+        static int[] toIntArray(@NonNull Set<Integer> ids) {
+            int[] array = new int[ids.size()];
+            int i = 0;
+            for (Integer id : ids) array[i++] = id;
+            return array;
+        }
+    }
+
+    public abstract static class BaseTextWatcher implements TextWatcher {
+        @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+        @Override public void afterTextChanged(Editable s) {}
     }
 
     public static final class SearchTextWatcher extends BaseTextWatcher {
         private final Runnable onChanged;
 
         public SearchTextWatcher(@NonNull Runnable onChanged) {
-            this.onChanged = Objects.requireNonNull(onChanged, "onChanged must not be null");
+            this.onChanged = Objects.requireNonNull(onChanged);
         }
 
         @Override
@@ -434,22 +365,8 @@ public class ConsultaProtocoloItemFragment extends Fragment {
     }
 
     private static final class Mapper {
-
-        static List<ProtocoloItemUiState> fromItensToUiStateList(@NonNull List<ProtocoloItem> itens) {
-            List<ProtocoloItemUiState> result = new ArrayList<>(itens.size());
-            for (ProtocoloItem item : itens) {
-                result.add(fromProtocoloItemToUiState(item));
-            }
-            return result;
-        }
-
-        private static ProtocoloItemUiState fromProtocoloItemToUiState(@NonNull ProtocoloItem protocoloItem) {
-            return new ProtocoloItemUiState(
-                    protocoloItem.getIdProtocoloItem(),
-                    protocoloItem.getDescricao(),
-                    OrigemItem.AVULSO,
-                    false
-            );
+        static ItemMedicamentoUiState fromProtocoloItemToUiState(@NonNull ProtocoloItem item) {
+            return new ItemMedicamentoUiState(item.getIdProtocoloItem(), item.getDescricao(), OrigemItem.AVULSO, false);
         }
     }
 
@@ -499,9 +416,7 @@ public class ConsultaProtocoloItemFragment extends Fragment {
             action.run();
         }
 
-        private boolean isCancelled() {
-            return cancelled;
-        }
+        private boolean isCancelled() { return cancelled; }
 
         @Override
         public synchronized void close() {

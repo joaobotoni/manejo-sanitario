@@ -88,7 +88,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/text_items_selecionados"
             tools:itemCount="3"
-            tools:listitem="@layout/list_view_consulta_item_protocolo_selecionado" />
+            tools:listitem="@layout/list_view_consulta_item_medicamento_selecionado" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -104,7 +104,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/recycler_protocolo_itens_consulta_selecionados"
         tools:itemCount="6"
-        tools:listitem="@layout/list_view_item_protocolo" />
+        tools:listitem="@layout/list_view_item_medicamento" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_confirmar"

@@ -11,23 +11,23 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.omni.container.R;
-import com.omni.container.ui.states.ProtocoloItemUiState;
+import com.omni.container.ui.states.ItemMedicamentoUiState;
 
 import java.util.List;
 
 public class ConsultaItemSelecionadoAdapter extends RecyclerView.Adapter<ConsultaItemSelecionadoAdapter.ViewHolder> {
     public interface OnItemRemovidoListener {
-        void onItemRemovido(@NonNull ProtocoloItemUiState item);
+        void onItemRemovido(@NonNull ItemMedicamentoUiState item);
     }
 
     @NonNull
-    private final List<ProtocoloItemUiState> items;
+    private final List<ItemMedicamentoUiState> items;
 
     @Nullable
     private final OnItemRemovidoListener listener;
 
     public ConsultaItemSelecionadoAdapter(
-            @NonNull List<ProtocoloItemUiState> items,
+            @NonNull List<ItemMedicamentoUiState> items,
             @Nullable OnItemRemovidoListener listener
     ) {
         this.items = items;
@@ -52,7 +52,7 @@ public class ConsultaItemSelecionadoAdapter extends RecyclerView.Adapter<Consult
 
     private View inflate(@NonNull ViewGroup parent) {
         return LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.list_view_consulta_item_protocolo_selecionado, parent, false);
+                .inflate(R.layout.list_view_consulta_item_medicamento_selecionado, parent, false);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -61,7 +61,7 @@ public class ConsultaItemSelecionadoAdapter extends RecyclerView.Adapter<Consult
         @Nullable
         private final OnItemRemovidoListener listener;
         @Nullable
-        private ProtocoloItemUiState currentState;
+        private ItemMedicamentoUiState currentState;
 
         ViewHolder(@NonNull View itemView, @Nullable OnItemRemovidoListener listener) {
             super(itemView);
@@ -71,7 +71,7 @@ public class ConsultaItemSelecionadoAdapter extends RecyclerView.Adapter<Consult
             btnRemoverMedicamento.setOnClickListener(v -> notifyItemRemovido());
         }
 
-        void bind(@NonNull ProtocoloItemUiState state) {
+        void bind(@NonNull ItemMedicamentoUiState state) {
             this.currentState = state;
             textNomeMedicamento.setText(state.getDescricao());
         }

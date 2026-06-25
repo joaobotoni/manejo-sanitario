@@ -7,7 +7,7 @@ import androidx.annotation.NonNull;
 
 import java.util.Objects;
 
-public final class ProtocoloItemUiState implements Parcelable {
+public final class ItemMedicamentoUiState implements Parcelable {
     private final int id;
     @NonNull
     private final String descricao;
@@ -15,29 +15,29 @@ public final class ProtocoloItemUiState implements Parcelable {
     private final OrigemItem origem;
     private final boolean isChecked;
 
-    public ProtocoloItemUiState(int id, @NonNull String descricao, @NonNull OrigemItem origem, boolean isChecked) {
+    public ItemMedicamentoUiState(int id, @NonNull String descricao, @NonNull OrigemItem origem, boolean isChecked) {
         this.id = id;
         this.descricao = descricao;
         this.origem = origem;
         this.isChecked = isChecked;
     }
 
-    protected ProtocoloItemUiState(Parcel in) {
+    protected ItemMedicamentoUiState(Parcel in) {
         id = in.readInt();
         descricao = in.readString();
         origem = OrigemItem.valueOf(in.readString());
         isChecked = in.readByte() != 0;
     }
 
-    public static final Creator<ProtocoloItemUiState> CREATOR = new Creator<ProtocoloItemUiState>() {
+    public static final Creator<ItemMedicamentoUiState> CREATOR = new Creator<ItemMedicamentoUiState>() {
         @Override
-        public ProtocoloItemUiState createFromParcel(Parcel in) {
-            return new ProtocoloItemUiState(in);
+        public ItemMedicamentoUiState createFromParcel(Parcel in) {
+            return new ItemMedicamentoUiState(in);
         }
 
         @Override
-        public ProtocoloItemUiState[] newArray(int size) {
-            return new ProtocoloItemUiState[size];
+        public ItemMedicamentoUiState[] newArray(int size) {
+            return new ItemMedicamentoUiState[size];
         }
     };
 
@@ -60,8 +60,8 @@ public final class ProtocoloItemUiState implements Parcelable {
     }
 
     @NonNull
-    public ProtocoloItemUiState withChecked(boolean checked) {
-        return new ProtocoloItemUiState(id, descricao, origem, checked);
+    public ItemMedicamentoUiState withChecked(boolean checked) {
+        return new ItemMedicamentoUiState(id, descricao, origem, checked);
     }
 
     @Override
@@ -80,8 +80,8 @@ public final class ProtocoloItemUiState implements Parcelable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ProtocoloItemUiState)) return false;
-        ProtocoloItemUiState that = (ProtocoloItemUiState) o;
+        if (!(o instanceof ItemMedicamentoUiState)) return false;
+        ItemMedicamentoUiState that = (ItemMedicamentoUiState) o;
         return id == that.id;
     }
 
