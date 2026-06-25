@@ -3,13 +3,13 @@ package com.omni.container.ui.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
-
 
 import com.omni.container.R;
 import com.omni.container.ui.states.ProtocoloItemUiState;
@@ -21,7 +21,7 @@ public class ProtocoloItemAdapter extends RecyclerView.Adapter<ProtocoloItemAdap
     public interface OnProtocoloItemClickListener {
         void onInfoClicked(@NonNull ProtocoloItemUiState state);
 
-        void onAddClicked(@NonNull ProtocoloItemUiState state);
+        void onCheckChanged(@NonNull ProtocoloItemUiState state, boolean isChecked);
     }
 
     @NonNull
@@ -56,13 +56,13 @@ public class ProtocoloItemAdapter extends RecyclerView.Adapter<ProtocoloItemAdap
 
     private View inflate(@NonNull ViewGroup parent) {
         return LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.recycler_view_xgp_item_protocolo, parent, false);
+                .inflate(R.layout.list_view_item_protocolo, parent, false);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private final TextView textNome;
         private final ImageView btnInfo;
-        private final ImageView btnAdicionar;
+        private final CheckBox checkboxAdicionar;
         @Nullable
         private final OnProtocoloItemClickListener clickListener;
         @Nullable
@@ -72,15 +72,20 @@ public class ProtocoloItemAdapter extends RecyclerView.Adapter<ProtocoloItemAdap
             super(itemView);
             this.textNome = itemView.findViewById(R.id.text_nome);
             this.btnInfo = itemView.findViewById(R.id.btn_info);
-            this.btnAdicionar = itemView.findViewById(R.id.btn_adicionar);
+            this.checkboxAdicionar = itemView.findViewById(R.id.checkbox_adicionar);
             this.clickListener = clickListener;
+
             btnInfo.setOnClickListener(v -> notifyInfoClicked());
-            btnAdicionar.setOnClickListener(v -> notifyAddClicked());
+            checkboxAdicionar.setOnCheckedChangeListener((buttonView, isChecked) -> notifyCheckChanged(isChecked));
         }
 
         void bind(@NonNull ProtocoloItemUiState state) {
             this.currentState = state;
             textNome.setText(state.getDescricao());
+
+            checkboxAdicionar.setOnCheckedChangeListener(null);
+            checkboxAdicionar.setChecked(state.isChecked());
+            checkboxAdicionar.setOnCheckedChangeListener((buttonView, isChecked) -> notifyCheckChanged(isChecked));
         }
 
         private void notifyInfoClicked() {
@@ -88,9 +93,9 @@ public class ProtocoloItemAdapter extends RecyclerView.Adapter<ProtocoloItemAdap
             clickListener.onInfoClicked(currentState);
         }
 
-        private void notifyAddClicked() {
+        private void notifyCheckChanged(boolean isChecked) {
             if (clickListener == null || currentState == null) return;
-            clickListener.onAddClicked(currentState);
+            clickListener.onCheckChanged(currentState, isChecked);
         }
     }
 }

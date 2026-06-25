@@ -1,7 +1,5 @@
 package com.omni.container.ui.adapters;
 
-import static com.omni.container.ui.states.OrigemItem.AVULSO;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,17 +13,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.omni.container.R;
 import com.omni.container.ui.states.OrigemItem;
-import com.omni.container.ui.states.ProtocoloItemAplicacaoUiState;
+import com.omni.container.ui.states.ProtocoloItemSelecionadoUiState;
 
 import java.util.List;
 
-public class ProtocoloItemAplicacaoAdapter extends RecyclerView.Adapter<ProtocoloItemAplicacaoAdapter.ViewHolder> {
+public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<ProtocoloItemSelecionadoAdapter.ViewHolder> {
     private static final char STATUS_APLICADO = 'S';
     private static final char STATUS_NAO_APLICADO = 'N';
     @NonNull
-    private final List<ProtocoloItemAplicacaoUiState> list;
+    private final List<ProtocoloItemSelecionadoUiState> list;
 
-    public ProtocoloItemAplicacaoAdapter(@NonNull List<ProtocoloItemAplicacaoUiState> list) {
+    public ProtocoloItemSelecionadoAdapter(@NonNull List<ProtocoloItemSelecionadoUiState> list) {
         this.list = list;
     }
 
@@ -46,7 +44,7 @@ public class ProtocoloItemAplicacaoAdapter extends RecyclerView.Adapter<Protocol
     }
 
     private View inflate(@NonNull ViewGroup parent) {
-        return LayoutInflater.from(parent.getContext()).inflate(R.layout.recycler_view_medicamento_aplicado, parent, false);
+        return LayoutInflater.from(parent.getContext()).inflate(R.layout.list_view_item_protocolo_selecionado, parent, false);
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
@@ -57,7 +55,7 @@ public class ProtocoloItemAplicacaoAdapter extends RecyclerView.Adapter<Protocol
         private final ImageView btnRemoverMedicamento;
         private final MaterialCheckBox checkAplicado;
         private final MaterialCheckBox checkNaoAplicado;
-        private ProtocoloItemAplicacaoUiState currentState;
+        private ProtocoloItemSelecionadoUiState currentState;
         private boolean binding;
 
         public ViewHolder(@NonNull View itemView) {
@@ -74,27 +72,27 @@ public class ProtocoloItemAplicacaoAdapter extends RecyclerView.Adapter<Protocol
             btnRemoverMedicamento.setOnClickListener(v -> removeCurrentItem());
         }
 
-        void bind(@NonNull ProtocoloItemAplicacaoUiState state) {
+        void bind(@NonNull ProtocoloItemSelecionadoUiState state) {
             this.currentState = state;
             bindTexts(state);
             bindStatus(state);
             bindVisibilidadeRemover(state);
         }
 
-        private void bindTexts(@NonNull ProtocoloItemAplicacaoUiState state) {
+        private void bindTexts(@NonNull ProtocoloItemSelecionadoUiState state) {
             textNomeMedicamento.setText(state.getDescricao());
             textOrigemMedicamento.setText(state.getOrigem().getNome());
             textDose.setText(String.valueOf(state.getQuantidadeAplicada()));
         }
 
-        private void bindStatus(@NonNull ProtocoloItemAplicacaoUiState state) {
+        private void bindStatus(@NonNull ProtocoloItemSelecionadoUiState state) {
             binding = true;
             checkAplicado.setChecked(state.getStatus() == STATUS_APLICADO);
             checkNaoAplicado.setChecked(state.getStatus() == STATUS_NAO_APLICADO);
             binding = false;
         }
 
-        private void bindVisibilidadeRemover(@NonNull ProtocoloItemAplicacaoUiState state) {
+        private void bindVisibilidadeRemover(@NonNull ProtocoloItemSelecionadoUiState state) {
             boolean isProtocolo = state.getOrigem() == OrigemItem.PROTOCOLO;
             btnRemoverMedicamento.setVisibility(isProtocolo ? View.GONE : View.VISIBLE);
         }

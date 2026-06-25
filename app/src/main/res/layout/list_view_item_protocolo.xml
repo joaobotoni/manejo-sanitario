@@ -55,23 +55,19 @@
         android:padding="8dp"
         android:src="@drawable/info_24px"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btn_adicionar"
+        app:layout_constraintEnd_toStartOf="@id/checkbox_adicionar"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="?attr/colorOnPrimaryContainer" />
 
-    <ImageView
-        android:id="@+id/btn_adicionar"
+    <CheckBox
+        android:id="@+id/checkbox_adicionar"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:clickable="true"
         android:contentDescription="@string/cd_add_medicamento"
         android:focusable="true"
-        android:padding="8dp"
-        android:src="@drawable/add_circle_24px"
+        app:buttonTint="?attr/colorOnPrimaryContainer"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="?attr/colorOnPrimaryContainer" />
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

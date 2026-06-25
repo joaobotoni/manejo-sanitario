@@ -44,15 +44,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class ConsultaMedicamentoFragment extends Fragment {
-    private static final String TAG = "CONSULTA_MEDICAMENTO_FRAGMENT";
+public class ConsultaProtocoloItemFragment extends Fragment {
+    private static final String TAG = "CONSULTA_PROTOCOLO_ITEM_FRAGMENT";
     private static final int THREAD_POOL_SIZE = 4;
     private static final int MIN_CARACTERES_BUSCA = 3;
+    private Executor executor;
     private EditText editBusca;
     private Button btnConfirmar;
-    private RecyclerView recyclerMedicamentosConsulta;
+    private RecyclerView recyclerProtocoloItensConsulta;
     private ProtocoloItemAdapter adapter;
-    private Executor executor;
 
     private final List<ProtocoloItemUiState> items = new ArrayList<>();
     private final List<ProtocoloItemUiState> todosItens = new ArrayList<>();
@@ -60,7 +60,7 @@ public class ConsultaMedicamentoFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_consulta_medicamento, container, false);
+        return inflater.inflate(R.layout.fragment_consulta_item_protocolo, container, false);
     }
 
     @Override
@@ -87,13 +87,13 @@ public class ConsultaMedicamentoFragment extends Fragment {
 
     private void bindViews(@NonNull View view) {
         editBusca = view.findViewById(R.id.edit_busca);
-        recyclerMedicamentosConsulta = view.findViewById(R.id.recycler_medicamentos_consulta);
+        recyclerProtocoloItensConsulta = view.findViewById(R.id.recycler_protocolo_itens_consulta);
         btnConfirmar = view.findViewById(R.id.btn_confirmar);
     }
 
     private void setupAdapter() {
         adapter = new ProtocoloItemAdapter(items, createProtocoloItemClickListener());
-        setupVerticalRecyclerView(recyclerMedicamentosConsulta, adapter, requireContext());
+        setupVerticalRecyclerView(recyclerProtocoloItensConsulta, adapter, requireContext());
     }
 
     private void setupBusca() {
@@ -106,24 +106,25 @@ public class ConsultaMedicamentoFragment extends Fragment {
 
     private OnProtocoloItemClickListener createProtocoloItemClickListener() {
         return new OnProtocoloItemClickListener() {
+
             @Override
             public void onInfoClicked(@NonNull ProtocoloItemUiState state) {
-                handleInfoClicked(state);
+
             }
 
             @Override
-            public void onAddClicked(@NonNull ProtocoloItemUiState state) {
-                handleAddClicked(state);
+            public void onCheckChanged(@NonNull ProtocoloItemUiState state, boolean isChecked) {
+
             }
         };
     }
 
     private void handleInfoClicked(@NonNull ProtocoloItemUiState state) {
-        // TODO: abrir info do medicamento
+        // TODO: abrir info do protocolo item
     }
 
     private void handleAddClicked(@NonNull ProtocoloItemUiState state) {
-        // TODO: adicionar item à seleção
+        // TODO: adicionar protocolo item à seleção
     }
 
     private void handleBusca() {
@@ -171,8 +172,8 @@ public class ConsultaMedicamentoFragment extends Fragment {
     }
 
     private void handleErroAoBuscarItems(@NonNull Throwable throwable) {
-        showSnackBarErro(getString(R.string.erro_carregar_items));
-        Log.d(TAG, getString(R.string.erro_carregar_items_protocolo) + throwable.getMessage());
+        showSnackBarErro(getString(R.string.erro_carregar_protocolo_itens));
+        Log.d(TAG, getString(R.string.erro_carregar_protocolo_itens) + throwable.getMessage());
     }
 
     private void showSnackBarErro(@NonNull String message) {
@@ -193,7 +194,7 @@ public class ConsultaMedicamentoFragment extends Fragment {
 
     private void releaseViews() {
         editBusca = null;
-        recyclerMedicamentosConsulta = null;
+        recyclerProtocoloItensConsulta = null;
         btnConfirmar = null;
         adapter = null;
     }
@@ -246,12 +247,11 @@ public class ConsultaMedicamentoFragment extends Fragment {
         }
 
         private static ProtocoloItemUiState fromProtocoloItemToUiState(@NonNull ProtocoloItem protocoloItem) {
-            return new ProtocoloItemUiState(protocoloItem.getIdProtocoloItem(), protocoloItem.getDescricao());
+            return new ProtocoloItemUiState(protocoloItem.getIdProtocoloItem(), protocoloItem.getDescricao(), false);
         }
     }
 
     private static final class Executor implements Closeable {
-
         private final Handler handler;
         private final ExecutorService executor;
         private volatile boolean cancelled = false;

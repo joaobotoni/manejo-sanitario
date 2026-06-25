@@ -26,16 +26,17 @@
 
     <string name="format_qtd_medicamentos">%1$d medicamentos</string>
     <string name="format_qtd_itens">%1$d itens</string>
+    <string name="format_qtd_itens_selecionados">Selecionados (%1$d)</string>
     <string name="format_dose">%1$s mL</string>
     <string name="format_origem_e_dosagem">%1$s · %2$s</string>
     <string name="erro_carregar_protocolos">Erro ao carregar os protocolos.</string>
     <string name="erro_carregar_items">Erro ao carregar os items.</string>
-    <string name="erro_carregar_items_protocolo">Erro ao carregar os items do protocolo.</string>
+    <string name="erro_carregar_protocolo_itens">Erro ao carregar os items do protocolo.</string>
     <string name="erro_obter_informacoes_animal">Não foi possível obter as informações do animal.</string>
     <string name="erro_obter_informacoes_item">Não foi possível obter as informações do item selecionado.</string>
     <string name="protocolo_nome_vazio">s/n</string>
 
-    <plurals name="medicamentos_count">
+    <plurals name="protocolo_itens_selecionados_count">
         <item quantity="one">%d medicamento</item>
         <item quantity="other">%d medicamentos</item>
     </plurals>

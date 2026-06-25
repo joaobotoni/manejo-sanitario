@@ -38,8 +38,9 @@ import com.omni.container.data.dao.ProtocoloItemDao;
 import com.omni.container.data.entities.Protocolo;
 import com.omni.container.data.entities.ProtocoloItem;
 import com.omni.container.ui.adapters.ProtocoloAdapter;
-import com.omni.container.ui.adapters.ProtocoloItemAplicacaoAdapter;
-import com.omni.container.ui.states.ProtocoloItemAplicacaoUiState;
+import com.omni.container.ui.adapters.ProtocoloItemSelecionadoAdapter;
+
+import com.omni.container.ui.states.ProtocoloItemSelecionadoUiState;
 import com.omni.container.ui.states.ProtocoloUiState;
 
 import java.io.Closeable;
@@ -62,8 +63,8 @@ public class ManejoSanitarioFragment extends Fragment {
     private static final double PESO_AUSENTE = 0.0;
     private static final char STATUS_NAO_APLICADO = 'N';
 
-    public static final String RESULT_KEY_MEDICAMENTO_AVULSO = "result_medicamento_avulso";
-    public static final String ARG_KEY_MEDICAMENTO_AVULSO = "arg_medicamento_avulso";
+    public static final String RESULT_KEY_PROTOCOLO_ITEM_SELECIONADO_AVULSO = "result_protocolo_item_selecionado_avulso";
+    public static final String ARG_KEY_PROTOCOLO_ITEM_SELECIONADO_AVULSO = "arg_protocolo_item_selecionado_avulso";
     public static final String RESULT_KEY_ANIMAL = "result_animal";
     public static final String ARG_KEY_COD_ANIMAL = "arg_cod_animal";
     public static final String ARG_KEY_COD_BOTTOM = "arg_cod_bottom";
@@ -72,29 +73,29 @@ public class ManejoSanitarioFragment extends Fragment {
     private static final String STATE_KEY_APLICACAO_ITEMS = "state_aplicacao_items";
     private static final String STATE_KEY_PROTOCOLO_SELECIONADO = "state_protocolo_selecionado";
 
-    private TextView textViewMedicamentos;
+    private TextView textViewProtocoloItensSelecionados;
     private TextView textProtocoloNome;
     private EditText editTextPeso;
     private EditText editTextIdentificacao;
     private AutoCompleteTextView autoCompleteTextViewProtocolos;
-    private MaterialCardView cardMedicamentoAvulso;
+    private MaterialCardView cardProtocoloItemAvulso;
     private MaterialCardView cardProtocoloSelecionado;
     private LinearLayout cardEmptyState;
     private ImageView imageViewInfo;
     private ImageView imageViewRemover;
     private Button buttonSalvar;
-    private RecyclerView recyclerMedicamentos;
+    private RecyclerView recyclerViewProtocoloItensSelecionados;
     private Executor executor;
     private ProtocoloAdapter protocoloAdapter;
-    private ProtocoloItemAplicacaoAdapter protocoloItemAplicacaoAdapter;
     private ProtocoloUiState protocoloSelecionado;
+    private ProtocoloItemSelecionadoAdapter protocoloItemSelecionadoAdapter;
     private String codAnimal;
     private String codBottom;
     private String codSysBov;
     private double peso;
 
-    private final List<ProtocoloItemAplicacaoUiState> aplicacaoItems = new ArrayList<>();
-    private final List<ProtocoloUiState> protocolos = new ArrayList<>();
+    private final List<ProtocoloItemSelecionadoUiState> aplicacaoItems = new ArrayList<>();
+    private final List<ProtocoloUiState> protocols = new ArrayList<>();
 
     @Nullable
     @Override
@@ -144,17 +145,17 @@ public class ManejoSanitarioFragment extends Fragment {
 
     private void bindProtocolosNoAdapter() {
         protocoloAdapter.clear();
-        protocoloAdapter.addAll(protocolos);
+        protocoloAdapter.addAll(protocols);
     }
 
     private void setupFragmentResultListener() {
-        setupMedicamentoResultListener();
+        setupProtocoloItemResultListener();
         setupAnimalResultListener();
     }
 
-    private void setupMedicamentoResultListener() {
-        getParentFragmentManager().setFragmentResultListener(RESULT_KEY_MEDICAMENTO_AVULSO, getViewLifecycleOwner(),
-                (requestKey, bundle) -> handleMedicamentoRecebido(bundle));
+    private void setupProtocoloItemResultListener() {
+        getParentFragmentManager().setFragmentResultListener(RESULT_KEY_PROTOCOLO_ITEM_SELECIONADO_AVULSO, getViewLifecycleOwner(),
+                (requestKey, bundle) -> handleProtocoloItemRecebido(bundle));
     }
 
     private void setupAnimalResultListener() {
@@ -163,30 +164,30 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void setupAplicacaoRecyclerView() {
-        protocoloItemAplicacaoAdapter = new ProtocoloItemAplicacaoAdapter(aplicacaoItems);
-        setupVerticalRecyclerView(recyclerMedicamentos, protocoloItemAplicacaoAdapter, requireContext());
+        protocoloItemSelecionadoAdapter = new ProtocoloItemSelecionadoAdapter(aplicacaoItems);
+        setupVerticalRecyclerView(recyclerViewProtocoloItensSelecionados, protocoloItemSelecionadoAdapter, requireContext());
     }
 
     private void setupClickListeners() {
-        cardMedicamentoAvulso.setOnClickListener(v -> navegarParaConsultaMedicamento());
-        imageViewInfo.setOnClickListener(v -> showInfoAplicacaoMedicamento());
+        cardProtocoloItemAvulso.setOnClickListener(v -> navegarParaConsultaProtocoloItem());
+        imageViewInfo.setOnClickListener(v -> showInfoAplicacaoProtocolo());
         imageViewRemover.setOnClickListener(v -> configureRemocaoDeProtocolo());
         buttonSalvar.setOnClickListener(v -> configureAcaoDeSalvar());
     }
 
     private void bindViews(@NonNull View view) {
-        textViewMedicamentos = view.findViewById(R.id.text_medicamentos_count);
+        textViewProtocoloItensSelecionados = view.findViewById(R.id.text_protocolo_itens_selecionados_count);
         editTextIdentificacao = view.findViewById(R.id.edit_identificacao);
         textProtocoloNome = view.findViewById(R.id.text_protocolo_nome);
         editTextPeso = view.findViewById(R.id.edit_peso);
         autoCompleteTextViewProtocolos = view.findViewById(R.id.edit_protocolo);
-        cardMedicamentoAvulso = view.findViewById(R.id.card_medicamento_avulso);
+        cardProtocoloItemAvulso = view.findViewById(R.id.card_protocolo_item_avulso);
         cardProtocoloSelecionado = view.findViewById(R.id.card_protocolo_selecionado);
         cardEmptyState = view.findViewById(R.id.empty_state);
         buttonSalvar = view.findViewById(R.id.btn_salvar);
         imageViewInfo = view.findViewById(R.id.btn_protocolo_info);
         imageViewRemover = view.findViewById(R.id.btn_protocolo_remover);
-        recyclerMedicamentos = view.findViewById(R.id.recycler_medicamentos);
+        recyclerViewProtocoloItensSelecionados = view.findViewById(R.id.recycler_protocolo_itens_selecionados);
     }
 
     public static void setupVerticalRecyclerView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.Adapter<?> adapter, @NonNull Context context) {
@@ -199,20 +200,20 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void bindAdicaoDeItemNoAdapter() {
-        protocoloItemAplicacaoAdapter.notifyItemInserted(aplicacaoItems.size() - 1);
-        showContadorMedicamentos();
+        protocoloItemSelecionadoAdapter.notifyItemInserted(aplicacaoItems.size() - 1);
+        showContadorItems();
     }
 
     private void bindRemocaoDeItemNoAdapter(int index) {
-        protocoloItemAplicacaoAdapter.notifyItemRemoved(index);
-        showContadorMedicamentos();
+        protocoloItemSelecionadoAdapter.notifyItemRemoved(index);
+        showContadorItems();
     }
 
-    private void showContadorMedicamentos() {
-        formatTextoPlural(textViewMedicamentos, requireContext(), R.plurals.medicamentos_count, aplicacaoItems.size());
+    private void showContadorItems() {
+        formatTextoPlural(textViewProtocoloItensSelecionados, requireContext(), R.plurals.protocolo_itens_selecionados_count, aplicacaoItems.size());
     }
 
-    private void showInfoAplicacaoMedicamento() {
+    private void showInfoAplicacaoProtocolo() {
         new InfoAplicacaoFragment().show(getParentFragmentManager(), InfoAplicacaoFragment.TAG);
     }
 
@@ -229,32 +230,32 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void showNovosProtocolosDropdown(@NonNull List<ProtocoloUiState> novosProtocolos) {
-        protocolos.clear();
-        protocolos.addAll(novosProtocolos);
+        protocols.clear();
+        protocols.addAll(novosProtocolos);
         bindProtocolosNoAdapter();
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    private void showNovosItemsDeAplicacao(@NonNull List<ProtocoloItemAplicacaoUiState> novosItems) {
+    private void showNovosItemsSelecionados(@NonNull List<ProtocoloItemSelecionadoUiState> novosItems) {
         aplicacaoItems.clear();
         aplicacaoItems.addAll(novosItems);
-        protocoloItemAplicacaoAdapter.notifyDataSetChanged();
-        showContadorMedicamentos();
+        protocoloItemSelecionadoAdapter.notifyDataSetChanged();
+        showContadorItems();
         applyVisibilidadeDeItens();
     }
 
     private void applyVisibilidadeDeItens() {
         boolean hasItems = !aplicacaoItems.isEmpty();
         setVisible(!hasItems, cardEmptyState);
-        setVisible(hasItems, recyclerMedicamentos);
+        setVisible(hasItems, recyclerViewProtocoloItensSelecionados);
         setVisible(hasItems, cardProtocoloSelecionado);
     }
 
-    private void navegarParaConsultaMedicamento() {
+    private void navegarParaConsultaProtocoloItem() {
         getParentFragmentManager().beginTransaction()
                 .setReorderingAllowed(true)
                 .addToBackStack(null)
-                .replace(R.id.fragment_container_view, new ConsultaMedicamentoFragment())
+                .replace(R.id.fragment_container_view, new ConsultaProtocoloItemFragment())
                 .commit();
     }
 
@@ -282,28 +283,28 @@ public class ManejoSanitarioFragment extends Fragment {
         applyVisibilidadeDeItens();
     }
 
-    private void attachMedicamentoAvulso(@NonNull ProtocoloItemAplicacaoUiState state) {
+    private void attachProtocoloItemSelecionadoAvulso(@NonNull ProtocoloItemSelecionadoUiState state) {
         aplicacaoItems.add(state);
         bindAdicaoDeItemNoAdapter();
     }
 
-    private void attachRemocaoDeMedicamentoAvulso(@NonNull ProtocoloItemAplicacaoUiState state) {
+    private void attachRemocaoDeProtocoloItemSelecionadoAvulso(@NonNull ProtocoloItemSelecionadoUiState state) {
         int index = aplicacaoItems.indexOf(state);
         if (isPosicaoInvalida(index)) return;
         aplicacaoItems.remove(index);
         bindRemocaoDeItemNoAdapter(index);
     }
 
-    private void handleMedicamentoRecebido(@NonNull Bundle bundle) {
-        ProtocoloItemAplicacaoUiState medicamento = getMedicamentoDoBundle(bundle);
-        if (isInvalido(medicamento)) return;
-        attachMedicamentoAvulso(medicamento);
+    private void handleProtocoloItemRecebido(@NonNull Bundle bundle) {
+        ProtocoloItemSelecionadoUiState protocoloItemSelecionado = getProtocoloItemSelecionadoDoBundle(bundle);
+        if (isInvalido(protocoloItemSelecionado)) return;
+        attachProtocoloItemSelecionadoAvulso(protocoloItemSelecionado);
         applyVisibilidadeDeItens();
     }
 
     @Nullable
-    private ProtocoloItemAplicacaoUiState getMedicamentoDoBundle(@NonNull Bundle bundle) {
-        return BundleCompat.getParcelable(bundle, ARG_KEY_MEDICAMENTO_AVULSO, ProtocoloItemAplicacaoUiState.class);
+    private ProtocoloItemSelecionadoUiState getProtocoloItemSelecionadoDoBundle(@NonNull Bundle bundle) {
+        return BundleCompat.getParcelable(bundle, ARG_KEY_PROTOCOLO_ITEM_SELECIONADO_AVULSO, ProtocoloItemSelecionadoUiState.class);
     }
 
     private void handleAnimalRecebido(@NonNull Bundle bundle) {
@@ -381,8 +382,8 @@ public class ManejoSanitarioFragment extends Fragment {
     @SuppressLint("NotifyDataSetChanged")
     private void clearItemsDeAplicacao() {
         aplicacaoItems.clear();
-        protocoloItemAplicacaoAdapter.notifyDataSetChanged();
-        showContadorMedicamentos();
+        protocoloItemSelecionadoAdapter.notifyDataSetChanged();
+        showContadorItems();
     }
 
     private void clearSelecaoDeProtocolo() {
@@ -393,19 +394,19 @@ public class ManejoSanitarioFragment extends Fragment {
 
     private void releaseViews() {
         executor = null;
-        textViewMedicamentos = null;
+        textViewProtocoloItensSelecionados = null;
         textProtocoloNome = null;
         editTextPeso = null;
         autoCompleteTextViewProtocolos = null;
-        cardMedicamentoAvulso = null;
+        cardProtocoloItemAvulso = null;
         cardProtocoloSelecionado = null;
         cardEmptyState = null;
         buttonSalvar = null;
         imageViewInfo = null;
         imageViewRemover = null;
-        recyclerMedicamentos = null;
+        recyclerViewProtocoloItensSelecionados = null;
         protocoloAdapter = null;
-        protocoloItemAplicacaoAdapter = null;
+        protocoloItemSelecionadoAdapter = null;
         editTextIdentificacao = null;
     }
 
@@ -430,7 +431,7 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void restoreAplicacaoItens(@NonNull Bundle savedInstanceState) {
-        List<ProtocoloItemAplicacaoUiState> items = BundleCompat.getParcelableArrayList(savedInstanceState, STATE_KEY_APLICACAO_ITEMS, ProtocoloItemAplicacaoUiState.class);
+        List<ProtocoloItemSelecionadoUiState> items = BundleCompat.getParcelableArrayList(savedInstanceState, STATE_KEY_APLICACAO_ITEMS, ProtocoloItemSelecionadoUiState.class);
         if (isListaVazia(items)) return;
         aplicacaoItems.clear();
         aplicacaoItems.addAll(items);
@@ -450,8 +451,8 @@ public class ManejoSanitarioFragment extends Fragment {
 
     @SuppressLint("NotifyDataSetChanged")
     private void bindItensDeAplicacao() {
-        protocoloItemAplicacaoAdapter.notifyDataSetChanged();
-        showContadorMedicamentos();
+        protocoloItemSelecionadoAdapter.notifyDataSetChanged();
+        showContadorItems();
         applyVisibilidadeDeItens();
     }
 
@@ -461,7 +462,7 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private boolean hasProtocolosCarregados() {
-        return !protocolos.isEmpty();
+        return !protocols.isEmpty();
     }
 
     private void fetchProtocolosParaDropdown() {
@@ -473,11 +474,11 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void fetchAllItemsDosProtocolosNoBanco(@NonNull Consumer<List<ProtocoloItem>> onSuccess) {
-        executor.execute(requireContext(), AppDatabase::protocoloItemDao, ProtocoloItemDao::getAll, onSuccess, this::handleErroAoBuscarItemsProtocolo);
+        executor.execute(requireContext(), AppDatabase::protocoloItemDao, ProtocoloItemDao::getAll, onSuccess, this::handleErroAoBuscarProtocoloItens);
     }
 
     private void fetchItemsDoProtocolo(@NonNull ProtocoloUiState protocolo) {
-        executor.execute(requireContext(), AppDatabase::protocoloItemDao, ProtocoloItemDao::getAllByIdProtocolo, protocolo.getId(), this::handleItemsDoProtocoloEncontrados, this::handleErroAoBuscarItemsProtocolo);
+        executor.execute(requireContext(), AppDatabase::protocoloItemDao, ProtocoloItemDao::getAllByIdProtocolo, protocolo.getId(), this::handleItemsDoProtocoloEncontrados, this::handleErroAoBuscarProtocoloItens);
     }
 
     private void handleProtocolosEncontrados(@NonNull List<Protocolo> protocolos, @NonNull List<ProtocoloItem> itens) {
@@ -485,7 +486,7 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void handleItemsDoProtocoloEncontrados(@NonNull List<ProtocoloItem> protocoloItems) {
-        showNovosItemsDeAplicacao(Mapper.fromItensToUiStateAplicacaoList(protocoloItems));
+        showNovosItemsSelecionados(Mapper.fromItensToUiStateAplicacaoList(protocoloItems));
     }
 
     private void handleErroAoBuscarProtocolos(@NonNull Throwable throwable) {
@@ -493,9 +494,9 @@ public class ManejoSanitarioFragment extends Fragment {
         Log.d(TAG, getString(R.string.erro_carregar_protocolos) + throwable.getMessage());
     }
 
-    private void handleErroAoBuscarItemsProtocolo(@NonNull Throwable throwable) {
-        showSnackBarErro(getString(R.string.erro_carregar_items_protocolo));
-        Log.d(TAG, getString(R.string.erro_carregar_items_protocolo) + throwable.getMessage());
+    private void handleErroAoBuscarProtocoloItens(@NonNull Throwable throwable) {
+        showSnackBarErro(getString(R.string.erro_carregar_protocolo_itens));
+        Log.d(TAG, getString(R.string.erro_carregar_protocolo_itens) + throwable.getMessage());
     }
 
     @Nullable
@@ -508,7 +509,7 @@ public class ManejoSanitarioFragment extends Fragment {
         return aplicacaoItems.stream().anyMatch(this::isItemDeProtocolo);
     }
 
-    private boolean isItemDeProtocolo(@NonNull ProtocoloItemAplicacaoUiState item) {
+    private boolean isItemDeProtocolo(@NonNull ProtocoloItemSelecionadoUiState item) {
         return item.getOrigem() == PROTOCOLO;
     }
 
@@ -574,7 +575,7 @@ public class ManejoSanitarioFragment extends Fragment {
                     .collect(Collectors.toList());
         }
 
-        static List<ProtocoloItemAplicacaoUiState> fromItensToUiStateAplicacaoList(@NonNull List<ProtocoloItem> itens) {
+        static List<ProtocoloItemSelecionadoUiState> fromItensToUiStateAplicacaoList(@NonNull List<ProtocoloItem> itens) {
             return itens.stream()
                     .map(Mapper::fromItemToUiStateAplicacao)
                     .collect(Collectors.toList());
@@ -594,8 +595,8 @@ public class ManejoSanitarioFragment extends Fragment {
             return new ProtocoloUiState(protocolo.getIdProtocolo(), protocolo.getDescricao(), quantidadeItems, protocolo.getAplicacao(), new Date());
         }
 
-        private static ProtocoloItemAplicacaoUiState fromItemToUiStateAplicacao(@NonNull ProtocoloItem item) {
-            return new ProtocoloItemAplicacaoUiState(item.getDescricao(), PROTOCOLO, DOSAGEM_INICIAL, STATUS_NAO_APLICADO);
+        private static ProtocoloItemSelecionadoUiState fromItemToUiStateAplicacao(@NonNull ProtocoloItem item) {
+            return new ProtocoloItemSelecionadoUiState(item.getDescricao(), PROTOCOLO, DOSAGEM_INICIAL, STATUS_NAO_APLICADO);
         }
     }
 
@@ -657,3 +658,4 @@ public class ManejoSanitarioFragment extends Fragment {
         }
     }
 }
+

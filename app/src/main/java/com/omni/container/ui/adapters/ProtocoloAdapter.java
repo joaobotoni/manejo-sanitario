@@ -17,11 +17,10 @@ import com.omni.container.ui.states.ProtocoloUiState;
 import java.util.List;
 
 public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
-
     private final Filter passthroughFilter = createPassthroughFilter();
 
     public ProtocoloAdapter(@NonNull Context context, @NonNull List<ProtocoloUiState> list) {
-        super(context, R.layout.recycler_view_xgp_protocolo, list);
+        super(context, R.layout.list_view_protocolo, list);
     }
 
     @NonNull
@@ -52,7 +51,7 @@ public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
 
     private View inflate(@NonNull ViewGroup parent) {
         return LayoutInflater.from(getContext())
-                .inflate(R.layout.recycler_view_xgp_protocolo, parent, false);
+                .inflate(R.layout.list_view_protocolo, parent, false);
     }
 
     private void bind(@NonNull View view, @NonNull ProtocoloUiState state) {
@@ -64,7 +63,7 @@ public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
 
     private String quantidadeMedicamentosLabel(int quantidade) {
         return getContext().getResources()
-                .getQuantityString(R.plurals.medicamentos_count, quantidade, quantidade);
+                .getQuantityString(R.plurals.protocolo_itens_selecionados_count, quantidade, quantidade);
     }
 
     private Filter createPassthroughFilter() {

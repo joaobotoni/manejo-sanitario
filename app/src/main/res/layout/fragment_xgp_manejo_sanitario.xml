@@ -93,7 +93,7 @@
 
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_medicamento_avulso"
+                android:id="@+id/card_protocolo_item_avulso"
                 style="?attr/materialCardViewFilledStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -170,7 +170,7 @@
                 app:cardBackgroundColor="?attr/colorSecondaryContainer"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/card_medicamento_avulso"
+                app:layout_constraintTop_toBottomOf="@id/card_protocolo_item_avulso"
                 app:shapeAppearance="?attr/shapeAppearanceCornerLarge"
                 tools:visibility="visible">
 
@@ -252,7 +252,7 @@
                 app:layout_goneMarginTop="20dp" />
 
             <TextView
-                android:id="@+id/text_medicamentos_count"
+                android:id="@+id/text_protocolo_itens_selecionados_count"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/format_qtd_itens"
@@ -262,7 +262,7 @@
                 app:layout_constraintTop_toTopOf="@id/text_medicamentos_label" />
 
             <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler_medicamentos"
+                android:id="@+id/recycler_protocolo_itens_selecionados"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"

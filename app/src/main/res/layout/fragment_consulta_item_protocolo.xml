@@ -57,8 +57,43 @@
     </com.google.android.material.card.MaterialCardView>
 
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/recycler_protocolo_itens_consulta_selecionados"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/card_busca">
+
+        <TextView
+            android:id="@+id/text_items_selecionados"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/format_qtd_itens_selecionados"
+            android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_items_selecionados"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:clipToPadding="false"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/text_items_selecionados"
+            tools:itemCount="3"
+            tools:listitem="@layout/list_view_consulta_item_protocolo_selecionado" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_medicamentos_consulta"
+        android:id="@+id/recycler_protocolo_itens_consulta"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="12dp"
@@ -67,9 +102,9 @@
         app:layout_constraintBottom_toTopOf="@+id/btn_confirmar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/card_busca"
+        app:layout_constraintTop_toBottomOf="@id/recycler_protocolo_itens_consulta_selecionados"
         tools:itemCount="6"
-        tools:listitem="@layout/recycler_view_xgp_item_protocolo" />
+        tools:listitem="@layout/list_view_item_protocolo" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_confirmar"

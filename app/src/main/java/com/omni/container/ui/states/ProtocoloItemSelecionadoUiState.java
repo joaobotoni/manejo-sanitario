@@ -6,36 +6,36 @@ import android.os.Parcelable;
 import androidx.annotation.NonNull;
 
 
-public class ProtocoloItemAplicacaoUiState implements Parcelable {
+public class ProtocoloItemSelecionadoUiState implements Parcelable {
 
     private final String descricao;
     private final OrigemItem origem;
     private final double quantidadeAplicada;
     private char status;
 
-    public ProtocoloItemAplicacaoUiState(String descricao, OrigemItem origem, double quantidadeAplicada, char status) {
+    public ProtocoloItemSelecionadoUiState(String descricao, OrigemItem origem, double quantidadeAplicada, char status) {
         this.descricao = descricao;
         this.origem = origem;
         this.quantidadeAplicada = quantidadeAplicada;
         this.status = status;
     }
 
-    protected ProtocoloItemAplicacaoUiState(Parcel in) {
+    protected ProtocoloItemSelecionadoUiState(Parcel in) {
         descricao = in.readString();
         origem = OrigemItem.valueOf(in.readString());
         quantidadeAplicada = in.readDouble();
         status = (char) in.readInt();
     }
 
-    public static final Creator<ProtocoloItemAplicacaoUiState> CREATOR = new Creator<ProtocoloItemAplicacaoUiState>() {
+    public static final Creator<ProtocoloItemSelecionadoUiState> CREATOR = new Creator<ProtocoloItemSelecionadoUiState>() {
         @Override
-        public ProtocoloItemAplicacaoUiState createFromParcel(Parcel in) {
-            return new ProtocoloItemAplicacaoUiState(in);
+        public ProtocoloItemSelecionadoUiState createFromParcel(Parcel in) {
+            return new ProtocoloItemSelecionadoUiState(in);
         }
 
         @Override
-        public ProtocoloItemAplicacaoUiState[] newArray(int size) {
-            return new ProtocoloItemAplicacaoUiState[size];
+        public ProtocoloItemSelecionadoUiState[] newArray(int size) {
+            return new ProtocoloItemSelecionadoUiState[size];
         }
     };
 
