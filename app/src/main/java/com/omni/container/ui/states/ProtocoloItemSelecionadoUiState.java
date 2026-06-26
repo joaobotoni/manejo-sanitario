@@ -8,12 +8,14 @@ import androidx.annotation.NonNull;
 
 public class ProtocoloItemSelecionadoUiState implements Parcelable {
 
+    private int id;
     private final String descricao;
     private final OrigemItem origem;
     private final double quantidadeAplicada;
     private char status;
 
-    public ProtocoloItemSelecionadoUiState(String descricao, OrigemItem origem, double quantidadeAplicada, char status) {
+    public ProtocoloItemSelecionadoUiState(int id, String descricao, OrigemItem origem, double quantidadeAplicada, char status) {
+        this.id = id;
         this.descricao = descricao;
         this.origem = origem;
         this.quantidadeAplicada = quantidadeAplicada;
@@ -64,6 +66,10 @@ public class ProtocoloItemSelecionadoUiState implements Parcelable {
         return 0;
     }
 
+    public int getId() {
+        return id;
+    }
+
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeString(descricao);
@@ -71,4 +77,5 @@ public class ProtocoloItemSelecionadoUiState implements Parcelable {
         dest.writeDouble(quantidadeAplicada);
         dest.writeInt(status);
     }
+
 }

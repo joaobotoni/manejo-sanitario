@@ -6,7 +6,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class ProtocoloUiState implements Parcelable {
-
     private final int id;
     private final String descricao;
     private final int quantidadeMedicamentos;
@@ -29,7 +28,7 @@ public class ProtocoloUiState implements Parcelable {
         date = new Date(in.readLong());
     }
 
-    public static final Creator<ProtocoloUiState> CREATOR = new Creator<ProtocoloUiState>() {
+    public static final Creator<ProtocoloUiState> CREATOR = new Creator<>() {
         @Override
         public ProtocoloUiState createFromParcel(Parcel in) {
             return new ProtocoloUiState(in);

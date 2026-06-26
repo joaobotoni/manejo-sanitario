@@ -19,17 +19,13 @@ public class ConsultaItemSelecionadoAdapter extends RecyclerView.Adapter<Consult
     public interface OnItemRemovidoListener {
         void onItemRemovido(@NonNull ItemMedicamentoUiState item);
     }
-
     @NonNull
     private final List<ItemMedicamentoUiState> items;
 
     @Nullable
     private final OnItemRemovidoListener listener;
 
-    public ConsultaItemSelecionadoAdapter(
-            @NonNull List<ItemMedicamentoUiState> items,
-            @Nullable OnItemRemovidoListener listener
-    ) {
+    public ConsultaItemSelecionadoAdapter(@NonNull List<ItemMedicamentoUiState> items, @Nullable OnItemRemovidoListener listener) {
         this.items = items;
         this.listener = listener;
     }

@@ -5,6 +5,7 @@
     <string name="hint_idv_ide">Idv/Ide</string>
     <string name="hint_peso_kg">Peso (kg)</string>
     <string name="hint_protocolo_vacinacao">Protocolo de vacinação</string>
+    <string name="hint_protocolo_observacao">Observação</string>
     <string name="title_add_medicamento_avulso">Adicionar medicamento avulso</string>
     <string name="subtitle_fora_protocolo">Fora de um protocolo</string>
     <string name="label_medicamentos">Medicamentos</string>
@@ -30,6 +31,8 @@
     <string name="format_dose">%1$s mL</string>
     <string name="format_origem_e_dosagem">%1$s · %2$s</string>
     <string name="erro_carregar_protocolos">Erro ao carregar os protocolos.</string>
+    <string name="erro_salvar_dados">Erro ao salvar os dados no banco</string>
+    <string name="sucesso_salvar_dados">Dados salvos com sucesso</string>
     <string name="erro_carregar_items">Erro ao carregar os items.</string>
     <string name="erro_carregar_protocolo_itens">Erro ao carregar os items do protocolo.</string>
     <string name="erro_obter_informacoes_animal">Não foi possível obter as informações do animal.</string>

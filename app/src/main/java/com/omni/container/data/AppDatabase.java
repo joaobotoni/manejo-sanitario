@@ -11,24 +11,28 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.omni.container.data.dao.ItemDao;
 import com.omni.container.data.dao.ProtocoloDao;
 import com.omni.container.data.dao.ProtocoloItemDao;
+import com.omni.container.data.dao.SanitarioDao;
+import com.omni.container.data.dao.SanitarioDetDao;
 import com.omni.container.data.entities.Item;
 import com.omni.container.data.entities.Protocolo;
 import com.omni.container.data.entities.ProtocoloItem;
+import com.omni.container.data.entities.Sanitario;
+import com.omni.container.data.entities.SanitarioDet;
 
 import org.jspecify.annotations.NonNull;
-
 
 @Database(
         entities = {
                 Protocolo.class,
                 ProtocoloItem.class,
-                Item.class
+                Item.class,
+                Sanitario.class,
+                SanitarioDet.class
         },
         version = 1
 )
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
-
     private static volatile AppDatabase INSTANCE;
 
     public abstract ProtocoloDao protocoloDao();
@@ -36,6 +40,10 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract ProtocoloItemDao protocoloItemDao();
 
     public abstract ItemDao itemDao();
+
+    public abstract SanitarioDao sanitarioDao();
+
+    public abstract SanitarioDetDao sanitarioDetDao();
 
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {

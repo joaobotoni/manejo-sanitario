@@ -74,11 +74,11 @@
             android:contentDescription="Remover medicamento"
             android:focusable="true"
             android:padding="8dp"
-            android:src="@drawable/close_24px"
+            android:src="@drawable/delete_24px"
             app:layout_constraintBottom_toBottomOf="@id/text_origem_medicamento"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/text_nome_medicamento"
-            app:tint="?attr/colorOnSurfaceVariant" />
+            app:tint="?attr/colorOnErrorContainer" />
 
         <com.google.android.material.divider.MaterialDivider
             android:id="@+id/divider_item"

@@ -22,13 +22,14 @@ public interface ItemDao {
     Item findByDescricao(String descricao);
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<Item> item);
+    @Query("SELECT * FROM xgp_item AS i INNER JOIN xgp_protocolo_item AS xi ON i.id_item = xi.id_item WHERE xi.id_protocolo = :id")
+    List<Item> getAllItemsByProtocolo(int id);
     @Query("DELETE FROM xgp_item")
     int deleteAll();
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     long insert(Item item);
     @Delete
     int delete(Item item);
-
     @Update
     int update(Item item);
 }

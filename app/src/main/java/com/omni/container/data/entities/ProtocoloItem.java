@@ -8,10 +8,8 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 
-
 @Entity(tableName = "xgp_protocolo_item", primaryKeys = {"id_protocolo", "id_protocolo_item"})
 public class ProtocoloItem implements Parcelable {
-
     @ColumnInfo(name = "id_protocolo")
     private int idProtocolo;
 
@@ -55,7 +53,7 @@ public class ProtocoloItem implements Parcelable {
     }
 
     @NonNull
-    public static final Creator<ProtocoloItem> CREATOR = new Creator<ProtocoloItem>() {
+    public static final Creator<ProtocoloItem> CREATOR = new Creator<>() {
         @Override
         public ProtocoloItem createFromParcel(Parcel in) {
             return new ProtocoloItem(in);

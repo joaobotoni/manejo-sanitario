@@ -91,6 +91,21 @@
                     tools:ignore="LabelFor" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layout_input_observacao"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:hint="@string/hint_protocolo_observacao"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/layout_input_protocolo">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_observacao"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_protocolo_item_avulso"
@@ -103,7 +118,7 @@
                 app:cardBackgroundColor="?attr/colorSecondaryContainer"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/layout_input_protocolo"
+                app:layout_constraintTop_toBottomOf="@id/layout_input_observacao"
                 app:shapeAppearance="?attr/shapeAppearanceCornerLarge">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
@@ -183,9 +198,9 @@
                         android:id="@+id/icon_protocolo"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
+                        android:layout_marginStart="20dp"
                         android:contentDescription="@string/cd_protocolo"
                         android:src="@drawable/checklist_24px"
-                        android:layout_marginStart="20dp"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
@@ -225,9 +240,9 @@
                         android:id="@+id/btn_protocolo_remover"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
+                        android:layout_marginEnd="8dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
-                        android:layout_marginEnd="8dp"
                         android:contentDescription="@string/cd_remover_protocolo"
                         android:focusable="true"
                         android:src="@drawable/close_24px"

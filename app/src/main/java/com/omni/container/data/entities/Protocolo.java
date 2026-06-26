@@ -17,7 +17,6 @@ import java.util.Date;
 
 @Entity(tableName = "xgp_protocolo", primaryKeys = {"id_protocolo",})
 public class Protocolo implements Parcelable {
-
     @ColumnInfo(name = "id_protocolo")
     private int idProtocolo;
 
@@ -146,7 +145,7 @@ public class Protocolo implements Parcelable {
         statusApp = in.readString();
     }
 
-    public static final Creator<Protocolo> CREATOR = new Creator<Protocolo>() {
+    public static final Creator<Protocolo> CREATOR = new Creator<>() {
         @Override
         public Protocolo createFromParcel(Parcel in) {
             return new Protocolo(in);

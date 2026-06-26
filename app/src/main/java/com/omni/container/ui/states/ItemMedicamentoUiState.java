@@ -7,29 +7,33 @@ import androidx.annotation.NonNull;
 
 import java.util.Objects;
 
-public final class ItemMedicamentoUiState implements Parcelable {
+public class ItemMedicamentoUiState implements Parcelable {
     private final int id;
     @NonNull
     private final String descricao;
     @NonNull
+    private final String aplicacao;
+    @NonNull
     private final OrigemItem origem;
     private final boolean isChecked;
 
-    public ItemMedicamentoUiState(int id, @NonNull String descricao, @NonNull OrigemItem origem, boolean isChecked) {
+    public ItemMedicamentoUiState(int id, @NonNull String descricao, @NonNull String aplicacao, @NonNull OrigemItem origem, boolean isChecked) {
         this.id = id;
         this.descricao = descricao;
+        this.aplicacao = aplicacao;
         this.origem = origem;
         this.isChecked = isChecked;
     }
 
-    protected ItemMedicamentoUiState(Parcel in) {
+    private ItemMedicamentoUiState(Parcel in) {
         id = in.readInt();
-        descricao = in.readString();
+        descricao = Objects.requireNonNull(in.readString());
+        aplicacao = Objects.requireNonNull(in.readString());
         origem = OrigemItem.valueOf(in.readString());
         isChecked = in.readByte() != 0;
     }
 
-    public static final Creator<ItemMedicamentoUiState> CREATOR = new Creator<ItemMedicamentoUiState>() {
+    public static final Creator<ItemMedicamentoUiState> CREATOR = new Creator<>() {
         @Override
         public ItemMedicamentoUiState createFromParcel(Parcel in) {
             return new ItemMedicamentoUiState(in);
@@ -60,8 +64,13 @@ public final class ItemMedicamentoUiState implements Parcelable {
     }
 
     @NonNull
+    public String getAplicacao() {
+        return aplicacao;
+    }
+
+    @NonNull
     public ItemMedicamentoUiState withChecked(boolean checked) {
-        return new ItemMedicamentoUiState(id, descricao, origem, checked);
+        return new ItemMedicamentoUiState(id, descricao, aplicacao, origem, checked);
     }
 
     @Override
