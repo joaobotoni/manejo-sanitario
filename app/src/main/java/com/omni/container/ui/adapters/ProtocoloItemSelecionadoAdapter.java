@@ -32,10 +32,6 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
     @Nullable
     private final OnItemRemovidoListener removidoListener;
 
-    public ProtocoloItemSelecionadoAdapter(@NonNull List<ProtocoloItemSelecionadoUiState> list) {
-        this.list = list;
-        this.removidoListener = null;
-    }
 
     public ProtocoloItemSelecionadoAdapter(@NonNull List<ProtocoloItemSelecionadoUiState> list, @Nullable OnItemRemovidoListener removidoListener) {
         this.list = list;

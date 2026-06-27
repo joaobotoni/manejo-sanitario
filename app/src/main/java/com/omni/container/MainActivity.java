@@ -8,6 +8,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.omni.container.ui.fragments.HomeFragment;
 import com.omni.container.ui.fragments.ManejoSanitarioFragment;
 
 public class MainActivity extends AppCompatActivity {
@@ -26,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .setReorderingAllowed(true)
-                    .add(R.id.fragment_container_view, ManejoSanitarioFragment.class, null)
+                    .add(R.id.fragment_container_view, HomeFragment.class, null)
                     .commit();
         }
     }

@@ -38,7 +38,10 @@
     <string name="erro_obter_informacoes_animal">Não foi possível obter as informações do animal.</string>
     <string name="erro_obter_informacoes_item">Não foi possível obter as informações do item selecionado.</string>
     <string name="protocolo_nome_vazio">s/n</string>
-
+    <string name="erro_peso_obrigatorio">Informe o peso do animal antes de salvar.</string>
+    <string name="erro_animal_obrigatorio">Nenhum animal identificado.</string>
+    <string name="erro_nenhum_item">Adicione ao menos um item de aplicação antes de salvar.</string>
+    <string name="erro_nenhum_item_selecionado">Selecione ao menos um item para confirmar.</string>
     <plurals name="protocolo_itens_selecionados_count">
         <item quantity="one">%d medicamento</item>
         <item quantity="other">%d medicamentos</item>
