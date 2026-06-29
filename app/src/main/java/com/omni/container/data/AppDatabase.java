@@ -93,8 +93,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     db.execSQL("INSERT INTO xgp_protocolo_item (id_protocolo, id_protocolo_item, id_tipo_manejo, id_item, descricao, ordem) VALUES (11, 3, 45, 1, 'Raiva - Rabune', 3)");
                                     db.execSQL("INSERT INTO xgp_protocolo_item (id_protocolo, id_protocolo_item, id_tipo_manejo, id_item, descricao, ordem) VALUES (11, 4, 45, 5, 'Pour on - Aciendel Plus', 4)");
                                 }
-                            })
-                            .build();
+                            }).build();
                 }
             }
         }

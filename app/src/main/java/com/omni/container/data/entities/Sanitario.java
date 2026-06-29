@@ -10,7 +10,7 @@ import java.util.Date;
 public class Sanitario {
 
     @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(name = "id_sanitario")
+    @ColumnInfo(name = "ID_SANITARIO")
     private int idSanitario;
 
     @ColumnInfo(name = "id_animal")
@@ -19,10 +19,13 @@ public class Sanitario {
     @ColumnInfo(name = "id_protocolo")
     private int idProtocolo;
 
+    @ColumnInfo(name = "guid")
     private String guid;
 
+    @ColumnInfo(name = "data")
     private Date data;
 
+    @ColumnInfo(name = "observacao")
     private String observacao;
 
     public int getIdSanitario() {

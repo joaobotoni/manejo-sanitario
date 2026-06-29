@@ -20,9 +20,7 @@ public class Item implements Parcelable {
     private String ativo;
     @ColumnInfo(name = "id_tipo_item")
     private int idTipoItem;
-
     private String aplicacao;
-
     public Item() {
     }
 

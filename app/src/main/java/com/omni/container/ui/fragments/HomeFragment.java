@@ -15,11 +15,8 @@ import androidx.fragment.app.Fragment;
 import com.omni.container.R;
 
 public class HomeFragment extends Fragment {
-
     private static final String TAG = HomeFragment.class.getSimpleName();
-
     public static final String RESULT_KEY_ANIMAL = "result_animal";
-
     public static final String ARG_KEY_ID_ANIMAL = "arg_id_animal";
     public static final String ARG_KEY_COD_BOTTOM = "arg_cod_bottom";
     public static final String ARG_KEY_PESO = "arg_peso";

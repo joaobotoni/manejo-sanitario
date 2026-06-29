@@ -29,7 +29,6 @@ import com.omni.container.R;
 import com.omni.container.data.AppDatabase;
 import com.omni.container.data.dao.ItemDao;
 import com.omni.container.data.entities.Item;
-import com.omni.container.ui.adapters.ConsultaItemSelecionadoAdapter;
 import com.omni.container.ui.adapters.ItemMedicamentoAdapter;
 import com.omni.container.ui.adapters.ItemMedicamentoAdapter.OnProtocoloItemClickListener;
 import com.omni.container.ui.states.ItemMedicamentoUiState;
@@ -66,15 +65,12 @@ public class ConsultaProtocoloItemFragment extends Fragment {
     private Button btnConfirmar;
     private TextView textItemsSelecionados;
     private RecyclerView recyclerConsulta;
-    private RecyclerView recyclerSelecionados;
 
     private DbExecutor executor;
     private ItemMedicamentoAdapter consultaAdapter;
-    private ConsultaItemSelecionadoAdapter selecionadosAdapter;
 
     private final Map<Integer, Item> originalItemsMap = new LinkedHashMap<>();
     private final List<ItemMedicamentoUiState> displayedItems = new ArrayList<>();
-    private final List<ItemMedicamentoUiState> selectedItems = new ArrayList<>();
     private final Set<Integer> selectedIds = new LinkedHashSet<>();
 
 
@@ -116,15 +112,12 @@ public class ConsultaProtocoloItemFragment extends Fragment {
         editBusca = view.findViewById(R.id.edit_busca);
         textItemsSelecionados = view.findViewById(R.id.text_items_selecionados);
         recyclerConsulta = view.findViewById(R.id.recycler_protocolo_itens_consulta);
-        recyclerSelecionados = view.findViewById(R.id.recycler_items_selecionados);
         btnConfirmar = view.findViewById(R.id.btn_confirmar);
     }
 
     private void setupAdapters() {
         consultaAdapter = new ItemMedicamentoAdapter(displayedItems, createListenerConsulta());
         ViewUtils.setupVerticalRecyclerView(recyclerConsulta, consultaAdapter, requireContext());
-        selecionadosAdapter = new ConsultaItemSelecionadoAdapter(selectedItems, this::handleItemRemovido);
-        ViewUtils.setupVerticalRecyclerView(recyclerSelecionados, selecionadosAdapter, requireContext());
     }
 
     private void setupListeners() {
@@ -155,7 +148,6 @@ public class ConsultaProtocoloItemFragment extends Fragment {
 
     private void bindEstadoAtual() {
         refreshDisplayedItems();
-        refreshSelectedItems();
         showContadorSelecionados();
     }
 
@@ -164,13 +156,6 @@ public class ConsultaProtocoloItemFragment extends Fragment {
         displayedItems.clear();
         displayedItems.addAll(buildDisplayedItems());
         consultaAdapter.notifyDataSetChanged();
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    private void refreshSelectedItems() {
-        selectedItems.clear();
-        selectedItems.addAll(buildSelectedItems());
-        selecionadosAdapter.notifyDataSetChanged();
     }
 
     private void updateEstadoItemExibido(int id, boolean isChecked) {
@@ -213,12 +198,7 @@ public class ConsultaProtocoloItemFragment extends Fragment {
     private void handleCheckChanged(int id, boolean isChecked) {
         updateSelectedId(id, isChecked);
         updateEstadoItemExibido(id, isChecked);
-        refreshSelectedItems();
         showContadorSelecionados();
-    }
-
-    private void handleItemRemovido(@NonNull ItemMedicamentoUiState state) {
-        handleCheckChanged(state.getId(), false);
     }
 
     private void handleConfirmar() {
@@ -249,13 +229,6 @@ public class ConsultaProtocoloItemFragment extends Fragment {
                 .map(Mapper::fromItemToUiState)
                 .filter(item -> isVisivelNaBusca(item, termo))
                 .map(this::buildItemComSelecao)
-                .collect(Collectors.toList());
-    }
-
-    @NonNull
-    private List<ItemMedicamentoUiState> buildSelectedItems() {
-        return streamSelectedOriginais()
-                .map(item -> Mapper.fromItemToUiState(item).withChecked(true))
                 .collect(Collectors.toList());
     }
 
@@ -324,10 +297,8 @@ public class ConsultaProtocoloItemFragment extends Fragment {
         editBusca = null;
         textItemsSelecionados = null;
         recyclerConsulta = null;
-        recyclerSelecionados = null;
         btnConfirmar = null;
         consultaAdapter = null;
-        selecionadosAdapter = null;
     }
 
 
