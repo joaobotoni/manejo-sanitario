@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.omni.container.R;
 
 
@@ -30,10 +31,12 @@ public class InfoAplicacaoFragment extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        return new AlertDialog.Builder(requireContext())
+        return new MaterialAlertDialogBuilder(requireContext())
                 .setIcon(R.drawable.info_24px)
+                .setTitle(getString(R.string.title_info_medicamento))
                 .setMessage(getAplicacao())
-                .create();
+                .setPositiveButton(getString(R.string.text_info_medicamento_acao),
+                        (dialog, which) -> dialog.dismiss()).create();
     }
 
     @Nullable

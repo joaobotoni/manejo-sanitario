@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "item_medicamento")
+@Entity(tableName = "xgp_item_medicamento")
 public class ItemMedicamento {
 
     @PrimaryKey

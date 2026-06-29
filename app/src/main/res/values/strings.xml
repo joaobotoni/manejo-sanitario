@@ -42,6 +42,9 @@
     <string name="erro_animal_obrigatorio">Nenhum animal identificado.</string>
     <string name="erro_nenhum_item">Adicione ao menos um item de aplicação antes de salvar.</string>
     <string name="erro_nenhum_item_selecionado">Selecione ao menos um item para confirmar.</string>
+    <string name="erro_carregar_dosagens">Erro ao carregar dosagens dos medicamentos</string>
+    <string name="title_info_medicamento">Info. Medicamento</string>
+    <string name="text_info_medicamento_acao">Fechar</string>
     <plurals name="protocolo_itens_selecionados_count">
         <item quantity="one">%d medicamento</item>
         <item quantity="other">%d medicamentos</item>
