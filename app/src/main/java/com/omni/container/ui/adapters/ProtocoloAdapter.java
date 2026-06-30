@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import com.omni.container.R;
 import com.omni.container.ui.states.ProtocoloUiState;
 
+import java.util.Collection;
 import java.util.List;
 
 public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
@@ -21,6 +22,24 @@ public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
 
     public ProtocoloAdapter(@NonNull Context context, @NonNull List<ProtocoloUiState> list) {
         super(context, R.layout.list_view_protocolo, list);
+    }
+
+    public static boolean isItemEmBranco(@Nullable ProtocoloUiState state) {
+        return state == null || state == ProtocoloUiState.EM_BRANCO;
+    }
+
+    @Override
+    public void addAll(@NonNull Collection<? extends ProtocoloUiState> collection) {
+        super.addAll(collection);
+        garantirItemEmBrancoNoTopo();
+    }
+
+    private void garantirItemEmBrancoNoTopo() {
+        if (!isPrimeiroItemEmBranco()) insert(ProtocoloUiState.EM_BRANCO, 0);
+    }
+
+    private boolean isPrimeiroItemEmBranco() {
+        return !isEmpty() && isItemEmBranco(getItem(0));
     }
 
     @NonNull
@@ -44,8 +63,7 @@ public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
     @NonNull
     private View bindView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
         View view = convertView != null ? convertView : inflate(parent);
-        ProtocoloUiState state = getItem(position);
-        if (state != null) bind(view, state);
+        bind(view, getItem(position));
         return view;
     }
 
@@ -54,16 +72,25 @@ public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
                 .inflate(R.layout.list_view_protocolo, parent, false);
     }
 
-    private void bind(@NonNull View view, @NonNull ProtocoloUiState state) {
+    private void bind(@NonNull View view, @Nullable ProtocoloUiState state) {
         TextView textNome = view.findViewById(R.id.text_nome_protocolo);
         TextView textQtd = view.findViewById(R.id.text_qtd_protocolo);
-        textNome.setText(state.getDescricao());
-        textQtd.setText(quantidadeMedicamentosLabel(state.getQuantidadeMedicamentos()));
+        textNome.setText(getDescricaoLabel(state));
+        textQtd.setText(getQuantidadeMedicamentosLabel(state));
     }
 
-    private String quantidadeMedicamentosLabel(int quantidade) {
+    @NonNull
+    private String getDescricaoLabel(@Nullable ProtocoloUiState state) {
+        if (isItemEmBranco(state)) return " ";
+        return state.getDescricao();
+    }
+
+    @NonNull
+    private String getQuantidadeMedicamentosLabel(@Nullable ProtocoloUiState state) {
+        if (isItemEmBranco(state)) return " ";
         return getContext().getResources()
-                .getQuantityString(R.plurals.protocolo_itens_selecionados_count, quantidade, quantidade);
+                .getQuantityString(R.plurals.protocolo_itens_selecionados_count,
+                        state.getQuantidadeMedicamentos(), state.getQuantidadeMedicamentos());
     }
 
     private Filter createPassthroughFilter() {
@@ -78,6 +105,12 @@ public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
             @Override
             protected void publishResults(CharSequence constraint, FilterResults results) {
                 notifyDataSetChanged();
+            }
+
+            @Override
+            public CharSequence convertResultToString(Object resultValue) {
+                if (resultValue == null) return " ";
+                return ((ProtocoloUiState) resultValue).getDescricao();
             }
         };
     }

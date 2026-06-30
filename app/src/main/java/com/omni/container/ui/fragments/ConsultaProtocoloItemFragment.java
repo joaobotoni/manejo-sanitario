@@ -30,7 +30,6 @@ import com.omni.container.data.AppDatabase;
 import com.omni.container.data.dao.ItemDao;
 import com.omni.container.data.entities.Item;
 import com.omni.container.ui.adapters.ItemMedicamentoAdapter;
-import com.omni.container.ui.adapters.ItemMedicamentoAdapter.OnProtocoloItemClickListener;
 import com.omni.container.ui.states.ItemMedicamentoUiState;
 import com.omni.container.ui.states.OrigemItem;
 
@@ -45,22 +44,20 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ConsultaProtocoloItemFragment extends Fragment {
-
     private static final String TAG = "FRAG_CONSULTA_PROTOCOLO";
     private static final int THREAD_POOL_SIZE = 4;
     private static final int MIN_CARACTERES_BUSCA = 3;
-
+    private static final int ID_TIPO_ITEM_MEDICAMENTO = 3;
     public static final String RESULT_KEY_PROTOCOLO_ITENS_SELECIONADOS = "result_protocolo_itens_selecionados";
     public static final String ARG_KEY_PROTOCOLO_ITENS_SELECIONADOS = "arg_protocolo_itens_selecionados";
-
     private static final String STATE_KEY_SELECTED_IDS = "state_selected_ids";
-
     private EditText editBusca;
     private Button btnConfirmar;
     private TextView textItemsSelecionados;
@@ -69,10 +66,9 @@ public class ConsultaProtocoloItemFragment extends Fragment {
     private DbExecutor executor;
     private ItemMedicamentoAdapter consultaAdapter;
 
+    private final Set<Integer> selectedIds = new LinkedHashSet<>();
     private final Map<Integer, Item> originalItemsMap = new LinkedHashMap<>();
     private final List<ItemMedicamentoUiState> displayedItems = new ArrayList<>();
-    private final Set<Integer> selectedIds = new LinkedHashSet<>();
-
 
     @Nullable
     @Override
@@ -103,7 +99,6 @@ public class ConsultaProtocoloItemFragment extends Fragment {
         clearViews();
     }
 
-
     private void setupExecutor() {
         executor = new DbExecutor(Executors.newFixedThreadPool(THREAD_POOL_SIZE), createMainThreadHandler());
     }
@@ -131,8 +126,8 @@ public class ConsultaProtocoloItemFragment extends Fragment {
         fetchItensIfNeeded();
     }
 
-    private OnProtocoloItemClickListener createListenerConsulta() {
-        return new OnProtocoloItemClickListener() {
+    private ItemMedicamentoAdapter.OnProtocoloItemClickListener createListenerConsulta() {
+        return new ItemMedicamentoAdapter.OnProtocoloItemClickListener() {
             @Override
             public void onInfoClicked(@NonNull ItemMedicamentoUiState state) {
                 showDialogInfoProtocolo(state.getAplicacao());
@@ -170,7 +165,8 @@ public class ConsultaProtocoloItemFragment extends Fragment {
     }
 
     private void showDialogInfoProtocolo(@NonNull String mensagem) {
-        InfoAplicacaoFragment.newInstance(mensagem).show(getParentFragmentManager(), InfoAplicacaoFragment.TAG);
+        InfoAplicacaoMedicamentoFragment.newInstance(getString(R.string.title_info_medicamento), mensagem)
+                .show(getParentFragmentManager(), InfoAplicacaoMedicamentoFragment.TAG);
     }
 
     private void showSnackBarErro(@NonNull String mensagem) {
@@ -180,7 +176,6 @@ public class ConsultaProtocoloItemFragment extends Fragment {
                 .setTextColor(Color.WHITE)
                 .show();
     }
-
 
     private void handleFetchItensSuccess(@NonNull List<Item> itens) {
         originalItemsMap.clear();
@@ -192,7 +187,7 @@ public class ConsultaProtocoloItemFragment extends Fragment {
 
     private void handleFetchItensError(@NonNull Throwable throwable) {
         showSnackBarErro(getString(R.string.erro_carregar_protocolo_itens));
-        Log.e(TAG, "Erro ao carregar itens: ", throwable);
+        Log.e(TAG, (getString(R.string.erro_carregar_protocolo_itens) +  throwable));
     }
 
     private void handleCheckChanged(int id, boolean isChecked) {
@@ -203,17 +198,12 @@ public class ConsultaProtocoloItemFragment extends Fragment {
 
     private void handleConfirmar() {
         List<Item> selecionados = buildSelectedEntities();
-        if (isEmptyList(selecionados)) {
-            showSnackBarErro(getString(R.string.erro_nenhum_item_selecionado));
-            return;
-        }
         sendResultToParent(selecionados);
         navigateBack();
     }
-
     private void fetchItensIfNeeded() {
         if (hasItensCarregados()) return;
-        executor.execute(requireContext(), AppDatabase::itemDao, ItemDao::getAll,
+        executor.execute(requireContext(), AppDatabase::itemDao, ItemDao::findByTipoItem, ID_TIPO_ITEM_MEDICAMENTO,
                 this::handleFetchItensSuccess, this::handleFetchItensError);
     }
 
@@ -387,7 +377,6 @@ public class ConsultaProtocoloItemFragment extends Fragment {
 
 
     private static final class DbExecutor implements Closeable {
-
         private final Handler handler;
         private final ExecutorService executor;
         private volatile boolean cancelled = false;
@@ -397,9 +386,9 @@ public class ConsultaProtocoloItemFragment extends Fragment {
             this.handler = handler;
         }
 
-        <D, E> void execute(@NonNull Context context, @NonNull Function<AppDatabase, D> daoExtractor, @NonNull Function<D, E> query,
-                            @NonNull Consumer<E> onSuccess, @NonNull Consumer<Exception> onError) {
-            submit(() -> query.apply(resolveDao(context, daoExtractor)), onSuccess, onError);
+        <D, P, E> void execute(@NonNull Context context, @NonNull Function<AppDatabase, D> daoExtractor, @NonNull BiFunction<D, P, E> query, @NonNull P param,
+                               @NonNull Consumer<E> onSuccess, @NonNull Consumer<Exception> onError) {
+            submit(() -> query.apply(resolveDao(context, daoExtractor), param), onSuccess, onError);
         }
 
         private <T> void submit(@NonNull Callable<T> task, @NonNull Consumer<T> onSuccess,

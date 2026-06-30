@@ -24,7 +24,7 @@ public interface SanitarioDetDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<SanitarioDet> sanitarioDets);
-    @Query("DELETE FROM xgp_item")
+    @Query("DELETE FROM xgp_sanitario_det")
     int deleteAll();
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     long insert(SanitarioDet sanitarioDet);

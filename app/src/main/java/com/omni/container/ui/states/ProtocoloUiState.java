@@ -6,6 +6,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class ProtocoloUiState implements Parcelable {
+    public static final ProtocoloUiState EM_BRANCO =
+            new ProtocoloUiState(0, "", 0, "", null);
     private final int id;
     private final String descricao;
     private final int quantidadeMedicamentos;
@@ -25,7 +27,8 @@ public class ProtocoloUiState implements Parcelable {
         descricao = in.readString();
         quantidadeMedicamentos = in.readInt();
         aplicacao = in.readString();
-        date = new Date(in.readLong());
+        long dateMs = in.readLong();
+        date = dateMs > -1 ? new Date(dateMs) : null;
     }
 
     public static final Creator<ProtocoloUiState> CREATOR = new Creator<>() {
@@ -58,6 +61,11 @@ public class ProtocoloUiState implements Parcelable {
 
     public Date getDate() {
         return date;
+    }
+
+    @Override
+    public String toString() {
+        return descricao;
     }
 
     @Override

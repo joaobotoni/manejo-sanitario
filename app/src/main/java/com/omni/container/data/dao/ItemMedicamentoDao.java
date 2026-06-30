@@ -21,11 +21,14 @@ public interface ItemMedicamentoDao {
     List<ItemMedicamento> getMedicamentosByItens(List<Integer> idsItem);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void insert(ItemMedicamento itemMedicamento);
+    long insert(ItemMedicamento itemMedicamento);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<ItemMedicamento> itensMedicamento);
 
     @Update
-    void update(ItemMedicamento itemMedicamento);
+    int update(ItemMedicamento itemMedicamento);
+
+    @Query("DELETE FROM xgp_item_medicamento")
+    int deleteAll();
 }

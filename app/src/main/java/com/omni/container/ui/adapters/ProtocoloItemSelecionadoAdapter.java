@@ -22,6 +22,7 @@ import java.util.Locale;
 public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<ProtocoloItemSelecionadoAdapter.ViewHolder> {
     private static final char STATUS_APLICADO = 'S';
     private static final char STATUS_NAO_APLICADO = 'N';
+
     public interface OnItemRemovidoListener {
         void onItemRemovido(@NonNull ProtocoloItemSelecionadoUiState item, int position);
     }
@@ -31,7 +32,6 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
 
     @Nullable
     private final OnItemRemovidoListener removidoListener;
-
 
     public ProtocoloItemSelecionadoAdapter(@NonNull List<ProtocoloItemSelecionadoUiState> list, @Nullable OnItemRemovidoListener removidoListener) {
         this.list = list;
@@ -77,6 +77,7 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
             btnRemoverMedicamento = itemView.findViewById(R.id.btn_remover_medicamento);
             checkAplicado = itemView.findViewById(R.id.check_aplicado);
             checkNaoAplicado = itemView.findViewById(R.id.check_nao_aplicado);
+
             checkAplicado.setOnCheckedChangeListener((v, isChecked) -> onAplicadoChanged(isChecked));
             checkNaoAplicado.setOnCheckedChangeListener((v, isChecked) -> onNaoAplicadoChanged(isChecked));
             btnRemoverMedicamento.setOnClickListener(v -> removeCurrentItem());
@@ -92,7 +93,7 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
         private void bindTexts(@NonNull ProtocoloItemSelecionadoUiState state) {
             textNomeMedicamento.setText(state.getDescricao());
             textOrigemMedicamento.setText(state.getOrigem().getNome());
-            textDose.setText(String.format(Locale.getDefault(), "%s %s", state.getQuantidadeAplicada() , state.getUnDose()));
+            textDose.setText(String.format(Locale.getDefault(), "%s %s", state.getQuantidadeAplicada(), state.getUnDose()));
         }
 
         private void bindStatus(@NonNull ProtocoloItemSelecionadoUiState state) {

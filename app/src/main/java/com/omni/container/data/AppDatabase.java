@@ -85,14 +85,14 @@ public abstract class AppDatabase extends RoomDatabase {
         }
 
         private void seedItens(@NonNull SupportSQLiteDatabase db) {
-            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (1, 'RABUNE', 'Raiva - Rabune', 'S', 1, 'Vacina contra a raiva dos herbívoros (bovinos), aplicação subcutânea')");
-            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (2, 'POLISTAR', 'Carbunculo - Polistar', 'S', 1, 'Vacina polivalente contra carbúnculo sintomático e clostridioses')");
-            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (3, 'BIOPERSOL', 'Vermifugo Biopersol', 'S', 1, 'Vermífugo de amplo espectro para controle de vermes gastrointestinais')");
-            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (4, 'BIOPOLIGEM', 'Pneumonia - Biopoligem', 'S', 1, 'Controle e prevenção de doenças respiratórias (pneumonia bovina)')");
-            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (5, 'ACIENDEL', 'Pour on - Aciendel Plus', 'S', 1, 'Endectocida pour-on para controle de vermes, carrapatos e bernes')");
-            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (6, 'MODPLUS', 'ModPlus', 'S', 1, 'Modificador metabólico para promoção de ganho de peso (respeitar carência de abate)')");
-            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (7, 'LONGAMECTINA', 'Longamectina Premium 3,5%', 'S', 1, 'Endectocida injetável de longa ação contra endo e ectoparasitas')");
-            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (8, 'ISOCOX', 'Isocox', 'S', 1, 'Anticoccidiano para prevenção e tratamento de coccidiose em bezerros')");
+            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (1, 'RABUNE', 'Raiva - Rabune', 'S', 3, 'Vacina contra a raiva dos herbívoros (bovinos), aplicação subcutânea')");
+            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (2, 'POLISTAR', 'Carbunculo - Polistar', 'S', 3, 'Vacina polivalente contra carbúnculo sintomático e clostridioses')");
+            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (3, 'BIOPERSOL', 'Vermifugo Biopersol', 'S', 3, 'Vermífugo de amplo espectro para controle de vermes gastrointestinais')");
+            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (4, 'BIOPOLIGEM', 'Pneumonia - Biopoligem', 'S', 3, 'Controle e prevenção de doenças respiratórias (pneumonia bovina)')");
+            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (5, 'ACIENDEL', 'Pour on - Aciendel Plus', 'S', 3, 'Endectocida pour-on para controle de vermes, carrapatos e bernes')");
+            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (6, 'MODPLUS', 'ModPlus', 'S', 3, 'Modificador metabólico para promoção de ganho de peso (respeitar carência de abate)')");
+            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (7, 'LONGAMECTINA', 'Longamectina Premium 3,5%', 'S', 3, 'Endectocida injetável de longa ação contra endo e ectoparasitas')");
+            db.execSQL("INSERT INTO xgp_item (id_item, cod_item, descricao, ativo, id_tipo_item, aplicacao) VALUES (8, 'ISOCOX', 'Isocox', 'S', 3, 'Anticoccidiano para prevenção e tratamento de coccidiose em bezerros')");
         }
 
         private void seedItensMedicamento(@NonNull SupportSQLiteDatabase db) {

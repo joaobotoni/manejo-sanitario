@@ -1,6 +1,5 @@
 <resources>
-    <string name="app_name">container</string>
-
+    <string name="app_name">Manejo Sanitario</string>
     <string name="title_dados_animal">Dados do animal</string>
     <string name="hint_idv_ide">Idv/Ide</string>
     <string name="hint_peso_kg">Peso (kg)</string>
@@ -43,8 +42,13 @@
     <string name="erro_nenhum_item">Adicione ao menos um item de aplicação antes de salvar.</string>
     <string name="erro_nenhum_item_selecionado">Selecione ao menos um item para confirmar.</string>
     <string name="erro_carregar_dosagens">Erro ao carregar dosagens dos medicamentos</string>
-    <string name="title_info_medicamento">Info. Medicamento</string>
     <string name="text_info_medicamento_acao">Fechar</string>
+    <string name="title_info_medicamento">Info. Medicamento</string>
+    <string name="title_info_protocolo">Info. Protocolo</string>
+    <plurals name="aviso_itens_ja_adicionados">
+        <item quantity="one">%d item já estava na lista e foi ignorado</item>
+        <item quantity="other">%d itens já estavam na lista e foram ignorados</item>
+    </plurals>
     <plurals name="protocolo_itens_selecionados_count">
         <item quantity="one">%d medicamento</item>
         <item quantity="other">%d medicamentos</item>

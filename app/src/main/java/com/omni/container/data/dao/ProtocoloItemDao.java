@@ -13,7 +13,7 @@ import com.omni.container.data.entities.ProtocoloItem;
 import java.util.List;
 
 @Dao
-public interface ProtocoloItemDao  {
+public interface ProtocoloItemDao {
 
     @Query("SELECT * FROM xgp_protocolo_item")
     List<ProtocoloItem> getAll();
@@ -23,9 +23,8 @@ public interface ProtocoloItemDao  {
             "  and id_protocolo_item = :id_protocolo_item")
     ProtocoloItem findByPk(int idProtocolo, int id_protocolo_item);
 
-    @Query("SELECT * FROM xgp_protocolo_item " +
-            "WHERE id_protocolo = :idProtocolo ")
-    ProtocoloItem findByIdProtocolo(int idProtocolo);
+    @Query("SELECT * FROM xgp_protocolo_item WHERE id_protocolo = :idProtocolo")
+    List<ProtocoloItem> findByIdProtocolo(int idProtocolo);
 
     @Query("SELECT * FROM xgp_protocolo_item " +
             "WHERE id_protocolo = :idProtocolo ")
@@ -54,5 +53,4 @@ public interface ProtocoloItemDao  {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(List<ProtocoloItem> protocoloItemList);
-
 }

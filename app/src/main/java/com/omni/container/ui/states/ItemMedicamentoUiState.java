@@ -82,6 +82,7 @@ public class ItemMedicamentoUiState implements Parcelable {
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeInt(id);
         dest.writeString(descricao);
+        dest.writeString(aplicacao);
         dest.writeString(origem.name());
         dest.writeByte((byte) (isChecked ? 1 : 0));
     }
