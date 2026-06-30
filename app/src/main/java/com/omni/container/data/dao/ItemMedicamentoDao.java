@@ -15,10 +15,8 @@ public interface ItemMedicamentoDao {
 
     @Query("SELECT * FROM xgp_item_medicamento")
     List<ItemMedicamento> getAll();
-
     @Query("SELECT * FROM xgp_item_medicamento WHERE id_item = :idItem")
     ItemMedicamento getByItem(int idItem);
-
     @Query("SELECT * FROM xgp_item_medicamento WHERE id_item IN (:idsItem)")
     List<ItemMedicamento> getMedicamentosByItens(List<Integer> idsItem);
 

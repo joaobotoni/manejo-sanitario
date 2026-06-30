@@ -57,7 +57,6 @@ import com.omni.container.ui.states.ProtocoloUiState;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -114,7 +113,6 @@ public class ManejoSanitarioFragment extends Fragment {
     private DbExecutor executor;
     private ProtocoloAdapter protocoloAdapter;
     private ProtocoloItemSelecionadoAdapter itensSelecionadosAdapter;
-
     private int idAnimal = ID_ANIMAL_AUSENTE;
     private String codAnimal;
     private String codBottom;
@@ -201,6 +199,15 @@ public class ManejoSanitarioFragment extends Fragment {
         buttonSalvar.setOnClickListener(v -> handleSalvar());
     }
 
+    private void setupPesoWatcher() {
+        editTextPeso.addTextChangedListener(new BaseTextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                handlePesoDigitado();
+            }
+        });
+    }
+
     private void setupResultListeners() {
         setupListenerItensProtocolo();
         setupListenerAnimal();
@@ -223,7 +230,6 @@ public class ManejoSanitarioFragment extends Fragment {
         bindEstadoAtual();
         fetchProtocolosIfNeeded();
     }
-
 
     private void bindEstadoAtual() {
         bindProtocolosNoAdapter();
@@ -284,7 +290,6 @@ public class ManejoSanitarioFragment extends Fragment {
                 .show();
     }
 
-
     private void updateVisibilidade() {
         ViewUtils.setVisible(!hasItens(), cardEmptyState);
         ViewUtils.setVisible(hasItens(), recyclerViewItens);
@@ -327,6 +332,11 @@ public class ManejoSanitarioFragment extends Fragment {
         showDialogInfoProtocolo(protocoloSelecionado.getAplicacao());
     }
 
+    private void handlePesoDigitado() {
+        peso = getPesoInput();
+        recalcularDosagens();
+    }
+
     private void handleSalvar() {
         if (!hasAnimalSelecionado()) {
             showSnackBarErro(getString(R.string.erro_animal_obrigatorio));
@@ -346,8 +356,7 @@ public class ManejoSanitarioFragment extends Fragment {
     private void handleResultItensProtocolo(@NonNull Bundle bundle) {
         List<Item> itens = BundleCompat.getParcelableArrayList(bundle, ARG_KEY_PROTOCOLO_ITENS_SELECIONADOS, Item.class);
         if (isEmptyList(itens)) return;
-        addItensAvulsos(itens);
-        fetchDosagensDosItens(itens);
+        fetchDosagensDosItens(itens, medicamentos -> handleItensAvulsosProntos(itens, medicamentos));
     }
 
     private void handleItemRemovido(@NonNull ProtocoloItemSelecionadoUiState item, int position) {
@@ -360,39 +369,6 @@ public class ManejoSanitarioFragment extends Fragment {
         updateDadosAnimal(bundle);
     }
 
-    private void handleDosagensCarregadas(@NonNull List<ItemMedicamento> medicamentos) {
-        for (ItemMedicamento medicamento : medicamentos) {
-            aplicarDosagem(medicamento);
-        }
-        recalcularDosagens();
-    }
-
-    private void recalcularDosagens() {
-        if (!hasItens()) return;
-        for (ProtocoloItemSelecionadoUiState item : aplicacaoItems) {
-            item.setQuantidadeAplicada(Dosagem.calcular(item, peso));
-        }
-        bindAplicacaoItems();
-    }
-
-    private void aplicarDosagem(@NonNull ItemMedicamento medicamento) {
-        for (ProtocoloItemSelecionadoUiState item : aplicacaoItems) {
-            aplicarSeMesmoItem(item, medicamento);
-        }
-    }
-
-    private void aplicarSeMesmoItem(@NonNull ProtocoloItemSelecionadoUiState item, @NonNull ItemMedicamento medicamento) {
-        if (!isMesmoItem(item, medicamento)) return;
-        setConfigDosagem(item, medicamento);
-    }
-
-    private void setConfigDosagem(@NonNull ProtocoloItemSelecionadoUiState item, @NonNull ItemMedicamento medicamento) {
-        item.setTipoDosagem(medicamento.getTipoDosagem());
-        item.setQtdeDose(medicamento.getQtdeDose());
-        item.setPesoBase(medicamento.getPesoBase());
-        item.setUnDose(medicamento.getUnDose());
-    }
-
     private void handleFetchProtocolosSuccess(@NonNull List<Protocolo> listaProtocolos, @NonNull List<ProtocoloItem> listaItens) {
         protocolos.clear();
         protocolos.addAll(Mapper.fromProtocolosToUiStateList(listaProtocolos, listaItens));
@@ -400,9 +376,20 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void handleFetchItensProtocoloSuccess(@NonNull List<Item> itens) {
+        fetchDosagensDosItens(itens, medicamentos -> handleItensProtocoloProntos(itens, medicamentos));
+    }
+
+    private void handleItensProtocoloProntos(@NonNull List<Item> itens, @NonNull List<ItemMedicamento> medicamentos) {
         removeItensDoProtocolo();
-        addItensProtocolo(itens);
-        fetchDosagensDosItens(itens);
+        aplicacaoItems.addAll(Mapper.fromItensToUiStateAplicacaoList(itens, medicamentos));
+        recalcularDosagens();
+    }
+
+    private void handleItensAvulsosProntos(@NonNull List<Item> itens, @NonNull List<ItemMedicamento> medicamentos) {
+        int posicaoInicial = aplicacaoItems.size();
+        aplicacaoItems.addAll(Mapper.fromItensToUiStateAvulsoList(itens, medicamentos));
+        itensSelecionadosAdapter.notifyItemRangeInserted(posicaoInicial, itens.size());
+        recalcularDosagens();
     }
 
     private void handleSanitarioSalvo(@NonNull Sanitario sanitario, long idGerado) {
@@ -435,8 +422,11 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
 
-    private void addItensProtocolo(@NonNull List<Item> itens) {
-        aplicacaoItems.addAll(Mapper.fromItensToUiStateAplicacaoList(itens));
+    private void recalcularDosagens() {
+        if (!hasItens()) return;
+        for (ProtocoloItemSelecionadoUiState item : aplicacaoItems) {
+            item.setQuantidadeAplicada(Dosagem.calcular(item, peso));
+        }
         bindAplicacaoItems();
     }
 
@@ -458,12 +448,11 @@ public class ManejoSanitarioFragment extends Fragment {
                 this::handleSaveSuccess, this::handleSaveError);
     }
 
-    private void fetchDosagensDosItens(@NonNull List<Item> itens) {
+    private void fetchDosagensDosItens(@NonNull List<Item> itens, @NonNull Consumer<List<ItemMedicamento>> onSuccess) {
         List<Integer> ids = itens.stream().map(Item::getIdItem).collect(Collectors.toList());
         executor.execute(requireContext(), AppDatabase::itemMedicamentoDao,
                 ItemMedicamentoDao::getMedicamentosByItens, ids,
-                this::handleDosagensCarregadas,
-                this::handleFetchDosagensError);
+                onSuccess, this::handleFetchDosagensError);
     }
 
     private void fetchProtocolosIfNeeded() {
@@ -493,7 +482,6 @@ public class ManejoSanitarioFragment extends Fragment {
                 this::handleFetchItensProtocoloSuccess, this::handleFetchItensProtocoloError);
     }
 
-
     private void navigateToConsultaProtocoloItem() {
         getParentFragmentManager().beginTransaction()
                 .setReorderingAllowed(true)
@@ -501,7 +489,6 @@ public class ManejoSanitarioFragment extends Fragment {
                 .replace(R.id.fragment_container_view, new ConsultaProtocoloItemFragment())
                 .commit();
     }
-
 
     @NonNull
     private Sanitario buildSanitario() {
@@ -596,15 +583,6 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
 
-    private void addItensAvulsos(@NonNull List<Item> itens) {
-        int posicaoInicial = aplicacaoItems.size();
-        aplicacaoItems.addAll(Mapper.fromItensToUiStateAvulsoList(itens));
-        itensSelecionadosAdapter.notifyItemRangeInserted(posicaoInicial, itens.size());
-        showContadorItens();
-        updateVisibilidade();
-    }
-
-
     private void saveAplicacaoItemsState(@NonNull Bundle outState) {
         outState.putParcelableArrayList(STATE_KEY_APLICACAO_ITEMS, new ArrayList<>(aplicacaoItems));
     }
@@ -644,10 +622,6 @@ public class ManejoSanitarioFragment extends Fragment {
         codSysBov = savedInstanceState.getString(STATE_KEY_COD_SYS_BOV);
     }
 
-
-    private boolean isMesmoItem(@NonNull ProtocoloItemSelecionadoUiState item, @NonNull ItemMedicamento medicamento) {
-        return item.getId() == medicamento.getIdItem();
-    }
 
     private boolean isProtocoloSelecionado() {
         return protocoloSelecionado != null;
@@ -716,6 +690,15 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
 
+    public abstract static class BaseTextWatcher implements TextWatcher {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+        @Override
+        public void afterTextChanged(Editable s) { }
+    }
+
+
     private static final class ViewUtils {
 
         static void setupVerticalRecyclerView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.Adapter<?> adapter, @NonNull Context context) {
@@ -743,21 +726,7 @@ public class ManejoSanitarioFragment extends Fragment {
             }
         }
     }
-    private void handlePesoDigitado() {
-        peso = getPesoInput();
-        recalcularDosagens();
-    }
-    private void setupPesoWatcher() {
-        editTextPeso.addTextChangedListener(new BaseTextWatcher() {
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {handlePesoDigitado();}
-        });
-    }
 
-    public abstract static class BaseTextWatcher implements TextWatcher {
-        @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-        @Override public void afterTextChanged(Editable s) { }
-    }
 
     private static final class Mapper {
         static List<ProtocoloUiState> fromProtocolosToUiStateList(@NonNull List<Protocolo> protocolos, @NonNull List<ProtocoloItem> itens) {
@@ -767,12 +736,12 @@ public class ManejoSanitarioFragment extends Fragment {
                     .collect(Collectors.toList());
         }
 
-        static List<ProtocoloItemSelecionadoUiState> fromItensToUiStateAvulsoList(@NonNull List<Item> itens) {
-            return fromItensToUiStateList(itens, OrigemItem.AVULSO);
+        static List<ProtocoloItemSelecionadoUiState> fromItensToUiStateAvulsoList(@NonNull List<Item> itens, @NonNull List<ItemMedicamento> medicamentos) {
+            return fromItensToUiStateList(itens, OrigemItem.AVULSO, medicamentos);
         }
 
-        static List<ProtocoloItemSelecionadoUiState> fromItensToUiStateAplicacaoList(@NonNull List<Item> itens) {
-            return fromItensToUiStateList(itens, PROTOCOLO);
+        static List<ProtocoloItemSelecionadoUiState> fromItensToUiStateAplicacaoList(@NonNull List<Item> itens, @NonNull List<ItemMedicamento> medicamentos) {
+            return fromItensToUiStateList(itens, PROTOCOLO, medicamentos);
         }
 
         static List<SanitarioDet> fromAplicacaoItemsToSanitarioDetList(@NonNull List<ProtocoloItemSelecionadoUiState> items, @NonNull Sanitario sanitario) {
@@ -783,14 +752,49 @@ public class ManejoSanitarioFragment extends Fragment {
             return result;
         }
 
-        private static List<ProtocoloItemSelecionadoUiState> fromItensToUiStateList(@NonNull List<Item> itens, @NonNull OrigemItem origem) {
+        private static List<ProtocoloItemSelecionadoUiState> fromItensToUiStateList(@NonNull List<Item> itens, @NonNull OrigemItem origem,
+                                                                                    @NonNull List<ItemMedicamento> medicamentos) {
+            Map<Integer, ItemMedicamento> dosagemPorItem = indexarPorItem(medicamentos);
             return itens.stream()
-                    .map(item -> fromItemToUiState(item, origem))
+                    .map(item -> fromItemToUiState(item, origem, dosagemPorItem.get(item.getIdItem())))
                     .collect(Collectors.toList());
         }
 
-        private static ProtocoloItemSelecionadoUiState fromItemToUiState(@NonNull Item item, @NonNull OrigemItem origem) {
-            return new ProtocoloItemSelecionadoUiState(item.getIdItem(), item.getDescricao(), origem, DOSAGEM_INICIAL, STATUS_NAO_APLICADO);
+        private static ProtocoloItemSelecionadoUiState fromItemToUiState(@NonNull Item item, @NonNull OrigemItem origem,
+                                                                         @Nullable ItemMedicamento medicamento) {
+            return new ProtocoloItemSelecionadoUiState(
+                    item.getIdItem(), item.getDescricao(),
+                    origem, STATUS_NAO_APLICADO,
+                    getTipoDosagem(medicamento),
+                    getQtdeDose(medicamento),
+                    getPesoBase(medicamento),
+                    getUnDose(medicamento),
+                    DOSAGEM_INICIAL);
+        }
+
+        private static Map<Integer, ItemMedicamento> indexarPorItem(@NonNull List<ItemMedicamento> medicamentos) {
+            return medicamentos.stream()
+                    .collect(Collectors.toMap(ItemMedicamento::getIdItem, medicamento -> medicamento));
+        }
+
+        @Nullable
+        private static String getTipoDosagem(@Nullable ItemMedicamento medicamento) {
+            return medicamento == null ? null : medicamento.getTipoDosagem();
+        }
+
+        @Nullable
+        private static Double getQtdeDose(@Nullable ItemMedicamento medicamento) {
+            return medicamento == null ? null : medicamento.getQtdeDose();
+        }
+
+        @Nullable
+        private static Double getPesoBase(@Nullable ItemMedicamento medicamento) {
+            return medicamento == null ? null : medicamento.getPesoBase();
+        }
+
+        @Nullable
+        private static String getUnDose(@Nullable ItemMedicamento medicamento) {
+            return medicamento == null ? null : medicamento.getUnDose();
         }
 
         private static ProtocoloUiState fromProtocoloToUiState(@NonNull Protocolo protocolo, int quantidadeItems) {

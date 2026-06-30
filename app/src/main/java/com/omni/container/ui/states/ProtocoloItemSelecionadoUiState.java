@@ -5,34 +5,62 @@ import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
 
+import androidx.annotation.Nullable;
+
 public class ProtocoloItemSelecionadoUiState implements Parcelable {
-    private int id;
+
+    private final int id;
     private final String descricao;
     private final OrigemItem origem;
-    private double quantidadeAplicada;
-    private String unDose;
-    private String tipoDosagem;
-    private Double qtdeDose;
-    private Double pesoBase;
     private char status;
+    private final String tipoDosagem;
+    private final Double qtdeDose;
+    private final Double pesoBase;
+    private final String unDose;
+    private double quantidadeAplicada;
 
-    public ProtocoloItemSelecionadoUiState(int id, String descricao, OrigemItem origem, double quantidadeAplicada, char status) {
+    public ProtocoloItemSelecionadoUiState(int id, @NonNull String descricao, @NonNull OrigemItem origem,
+                                           char status, @Nullable String tipoDosagem, @Nullable Double qtdeDose,
+                                           @Nullable Double pesoBase, @Nullable String unDose, double quantidadeAplicada) {
         this.id = id;
         this.descricao = descricao;
         this.origem = origem;
-        this.quantidadeAplicada = quantidadeAplicada;
         this.status = status;
+        this.tipoDosagem = tipoDosagem;
+        this.qtdeDose = qtdeDose;
+        this.pesoBase = pesoBase;
+        this.unDose = unDose;
+        this.quantidadeAplicada = quantidadeAplicada;
     }
 
-    protected ProtocoloItemSelecionadoUiState(Parcel in) {
+    protected ProtocoloItemSelecionadoUiState(@NonNull Parcel in) {
+        id = in.readInt();
         descricao = in.readString();
-        origem = OrigemItem.valueOf(in.readString());
-        quantidadeAplicada = in.readDouble();
+        origem = OrigemItem.values()[in.readInt()];
         status = (char) in.readInt();
         tipoDosagem = in.readString();
-        unDose = in.readString();
         qtdeDose = (Double) in.readValue(Double.class.getClassLoader());
         pesoBase = (Double) in.readValue(Double.class.getClassLoader());
+        unDose = in.readString();
+        quantidadeAplicada = in.readDouble();
+    }
+
+    @Override
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
+        dest.writeInt(id);
+        dest.writeString(descricao);
+        dest.writeInt(origem.ordinal());
+        dest.writeInt(status);
+        dest.writeString(tipoDosagem);
+        dest.writeValue(qtdeDose);
+        dest.writeValue(pesoBase);
+        dest.writeString(unDose);
+        dest.writeDouble(quantidadeAplicada);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
     }
 
     public static final Creator<ProtocoloItemSelecionadoUiState> CREATOR = new Creator<>() {
@@ -47,6 +75,10 @@ public class ProtocoloItemSelecionadoUiState implements Parcelable {
         }
     };
 
+    public int getId() {
+        return id;
+    }
+
     public String getDescricao() {
         return descricao;
     }
@@ -55,77 +87,35 @@ public class ProtocoloItemSelecionadoUiState implements Parcelable {
         return origem;
     }
 
-    public double getQuantidadeAplicada() {
-        return quantidadeAplicada;
-    }
-
     public char getStatus() {
         return status;
-    }
-
-    public void setStatus(char status) {
-        this.status = status;
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getTipoDosagem() {
         return tipoDosagem;
     }
 
-    public void setTipoDosagem(String tipoDosagem) {
-        this.tipoDosagem = tipoDosagem;
-    }
-
-    public String getUnDose() {
-        return unDose;
-    }
-
-    public void setUnDose(String unDose) {
-        this.unDose = unDose;
-    }
-
     public Double getQtdeDose() {
         return qtdeDose;
-    }
-
-    public void setQtdeDose(Double qtdeDose) {
-        this.qtdeDose = qtdeDose;
     }
 
     public Double getPesoBase() {
         return pesoBase;
     }
 
-    public void setPesoBase(Double pesoBase) {
-        this.pesoBase = pesoBase;
+    public String getUnDose() {
+        return unDose;
+    }
+
+    public double getQuantidadeAplicada() {
+        return quantidadeAplicada;
     }
 
     public void setQuantidadeAplicada(double quantidadeAplicada) {
         this.quantidadeAplicada = quantidadeAplicada;
     }
 
-    @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeString(descricao);
-        dest.writeString(origem.name());
-        dest.writeDouble(quantidadeAplicada);
-        dest.writeInt(status);
-        dest.writeString(tipoDosagem);
-        dest.writeValue(qtdeDose);
-        dest.writeValue(pesoBase);
-        dest.writeValue(unDose);
+    public void setStatus(char status) {
+        this.status = status;
     }
-
 }
