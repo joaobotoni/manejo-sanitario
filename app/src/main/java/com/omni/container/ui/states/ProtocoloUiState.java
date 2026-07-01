@@ -6,8 +6,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class ProtocoloUiState implements Parcelable {
-    public static final ProtocoloUiState EM_BRANCO =
-            new ProtocoloUiState(0, "", 0, "", null);
     private final int id;
     private final String descricao;
     private final int quantidadeMedicamentos;

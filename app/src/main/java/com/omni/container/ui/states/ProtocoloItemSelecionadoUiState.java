@@ -4,7 +4,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
-
 import androidx.annotation.Nullable;
 
 public class ProtocoloItemSelecionadoUiState implements Parcelable {
@@ -17,11 +16,13 @@ public class ProtocoloItemSelecionadoUiState implements Parcelable {
     private final Double qtdeDose;
     private final Double pesoBase;
     private final String unDose;
+    private final String aplicacao;
     private double quantidadeAplicada;
 
     public ProtocoloItemSelecionadoUiState(int id, @NonNull String descricao, @NonNull OrigemItem origem,
                                            char status, @Nullable String tipoDosagem, @Nullable Double qtdeDose,
-                                           @Nullable Double pesoBase, @Nullable String unDose, double quantidadeAplicada) {
+                                           @Nullable Double pesoBase, @Nullable String unDose,
+                                           @Nullable String aplicacao, double quantidadeAplicada) {
         this.id = id;
         this.descricao = descricao;
         this.origem = origem;
@@ -30,6 +31,7 @@ public class ProtocoloItemSelecionadoUiState implements Parcelable {
         this.qtdeDose = qtdeDose;
         this.pesoBase = pesoBase;
         this.unDose = unDose;
+        this.aplicacao = aplicacao;
         this.quantidadeAplicada = quantidadeAplicada;
     }
 
@@ -42,6 +44,7 @@ public class ProtocoloItemSelecionadoUiState implements Parcelable {
         qtdeDose = (Double) in.readValue(Double.class.getClassLoader());
         pesoBase = (Double) in.readValue(Double.class.getClassLoader());
         unDose = in.readString();
+        aplicacao = in.readString();
         quantidadeAplicada = in.readDouble();
     }
 
@@ -55,6 +58,7 @@ public class ProtocoloItemSelecionadoUiState implements Parcelable {
         dest.writeValue(qtdeDose);
         dest.writeValue(pesoBase);
         dest.writeString(unDose);
+        dest.writeString(aplicacao);
         dest.writeDouble(quantidadeAplicada);
     }
 
@@ -105,6 +109,11 @@ public class ProtocoloItemSelecionadoUiState implements Parcelable {
 
     public String getUnDose() {
         return unDose;
+    }
+
+    @Nullable
+    public String getAplicacao() {
+        return aplicacao;
     }
 
     public double getQuantidadeAplicada() {

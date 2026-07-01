@@ -73,7 +73,7 @@
             android:clickable="true"
             android:contentDescription="Remover medicamento"
             android:focusable="true"
-            android:padding="8dp"
+            android:padding="6dp"
             android:src="@drawable/delete_24px"
             app:layout_constraintBottom_toBottomOf="@id/text_origem_medicamento"
             app:layout_constraintEnd_toEndOf="parent"
@@ -102,10 +102,22 @@
             android:id="@+id/check_nao_aplicado"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="11dp"
             android:text="@string/checkbox_nao_aplicado"
             app:layout_constraintBottom_toBottomOf="@id/check_aplicado"
             app:layout_constraintStart_toEndOf="@id/check_aplicado"
+            app:layout_constraintTop_toTopOf="@id/check_aplicado" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_info"
+            style="@style/Widget.Material3.Button.TextButton.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_info_aplicacao_texto"
+            app:icon="@drawable/info_24px"
+            app:iconGravity="textStart"
+            app:layout_constraintBottom_toBottomOf="@id/check_aplicado"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/check_aplicado" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

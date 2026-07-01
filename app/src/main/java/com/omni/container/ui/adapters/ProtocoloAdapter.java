@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Filter;
 import android.widget.TextView;
@@ -18,14 +19,35 @@ import java.util.Collection;
 import java.util.List;
 
 public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
+    private static final ProtocoloUiState EM_BRANCO = new ProtocoloUiState(0, "", 0, "", null);
     private final Filter passthroughFilter = createPassthroughFilter();
 
     public ProtocoloAdapter(@NonNull Context context, @NonNull List<ProtocoloUiState> list) {
         super(context, R.layout.list_view_protocolo, list);
     }
 
+    @Nullable
+    public ProtocoloUiState resolveProtocoloSelecionado(int position) {
+        if (isPosicaoInvalida(position)) return null;
+        return resolveSeNaoEmBranco(getItem(position));
+    }
+
+    public boolean isSelecaoEmBranco(int position) {
+        return resolveProtocoloSelecionado(position) == null;
+    }
+
+    @Nullable
+    private ProtocoloUiState resolveSeNaoEmBranco(@Nullable ProtocoloUiState item) {
+        if (isItemEmBranco(item)) return null;
+        return item;
+    }
+
+    private boolean isPosicaoInvalida(int position) {
+        return position == AdapterView.INVALID_POSITION || position >= getCount();
+    }
+
     public static boolean isItemEmBranco(@Nullable ProtocoloUiState state) {
-        return state == null || state == ProtocoloUiState.EM_BRANCO;
+        return state == null || state == EM_BRANCO;
     }
 
     @Override
@@ -35,7 +57,7 @@ public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
     }
 
     private void garantirItemEmBrancoNoTopo() {
-        if (!isPrimeiroItemEmBranco()) insert(ProtocoloUiState.EM_BRANCO, 0);
+        if (!isPrimeiroItemEmBranco()) insert(EM_BRANCO, 0);
     }
 
     private boolean isPrimeiroItemEmBranco() {
@@ -55,18 +77,13 @@ public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
     }
 
     @NonNull
-    @Override
-    public Filter getFilter() {
-        return passthroughFilter;
-    }
-
-    @NonNull
     private View bindView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
         View view = convertView != null ? convertView : inflate(parent);
         bind(view, getItem(position));
         return view;
     }
 
+    @NonNull
     private View inflate(@NonNull ViewGroup parent) {
         return LayoutInflater.from(getContext())
                 .inflate(R.layout.list_view_protocolo, parent, false);
@@ -88,11 +105,21 @@ public class ProtocoloAdapter extends ArrayAdapter<ProtocoloUiState> {
     @NonNull
     private String getQuantidadeMedicamentosLabel(@Nullable ProtocoloUiState state) {
         if (isItemEmBranco(state)) return " ";
-        return getContext().getResources()
-                .getQuantityString(R.plurals.protocolo_itens_selecionados_count,
-                        state.getQuantidadeMedicamentos(), state.getQuantidadeMedicamentos());
+        return formatQuantidadeLabel(getContext(), state.getQuantidadeMedicamentos());
     }
 
+    @NonNull
+    public static String formatQuantidadeLabel(@NonNull Context context, int quantidade) {
+        return context.getResources().getQuantityString(R.plurals.protocolo_itens_selecionados_count, quantidade, quantidade);
+    }
+
+    @NonNull
+    @Override
+    public Filter getFilter() {
+        return passthroughFilter;
+    }
+
+    @NonNull
     private Filter createPassthroughFilter() {
         return new Filter() {
             @Override

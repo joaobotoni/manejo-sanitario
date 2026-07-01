@@ -14,7 +14,7 @@
     <string name="cd_add_medicamento_avulso">Adicionar medicamento avulso</string>
 
     <string name="checkbox_aplicado">Aplicado</string>
-    <string name="checkbox_nao_aplicado">Não aplicado</string>
+    <string name="checkbox_nao_aplicado">N/aplicado</string>
     <string name="cd_abrir">Abrir</string>
     <string name="cd_protocolo">Protocolo</string>
     <string name="cd_info_protocolo">Informações do protocolo</string>
@@ -45,6 +45,12 @@
     <string name="text_info_medicamento_acao">Fechar</string>
     <string name="title_info_medicamento">Info. Medicamento</string>
     <string name="title_info_protocolo">Info. Protocolo</string>
+    <string name="title_erro_dialog">Erro</string>
+    <string name="title_aviso_dialog">Aviso</string>
+    <string name="btn_dialog_confirmar">OK</string>
+    <string name="erro_status_nao_definido">Marque \"Aplicado\" ou \"Não aplicado\" para todos os itens antes de salvar.</string>
+    <string name="info_dose_content_description">Informações sobre a dosagem</string>
+    <string name="btn_info_aplicacao_texto">Info</string>
     <plurals name="aviso_itens_ja_adicionados">
         <item quantity="one">%d item já estava na lista e foi ignorado</item>
         <item quantity="other">%d itens já estavam na lista e foram ignorados</item>

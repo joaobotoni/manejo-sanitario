@@ -37,7 +37,6 @@ import org.jspecify.annotations.NonNull;
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
     private static final String DATABASE_NAME = "Sample.db";
-
     private static volatile AppDatabase INSTANCE;
 
     public abstract ProtocoloDao protocoloDao();

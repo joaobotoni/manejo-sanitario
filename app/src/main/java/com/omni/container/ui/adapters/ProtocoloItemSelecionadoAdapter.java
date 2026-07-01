@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.omni.container.R;
 import com.omni.container.ui.states.OrigemItem;
@@ -22,9 +23,14 @@ import java.util.Locale;
 public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<ProtocoloItemSelecionadoAdapter.ViewHolder> {
     private static final char STATUS_APLICADO = 'S';
     private static final char STATUS_NAO_APLICADO = 'N';
+    private static final char STATUS_INDEFINIDO = ' ';
 
     public interface OnItemRemovidoListener {
         void onItemRemovido(@NonNull ProtocoloItemSelecionadoUiState item, int position);
+    }
+
+    public interface OnItemInfoClicadoListener {
+        void onItemInfoClicado(@NonNull ProtocoloItemSelecionadoUiState item);
     }
 
     @NonNull
@@ -33,9 +39,15 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
     @Nullable
     private final OnItemRemovidoListener removidoListener;
 
-    public ProtocoloItemSelecionadoAdapter(@NonNull List<ProtocoloItemSelecionadoUiState> list, @Nullable OnItemRemovidoListener removidoListener) {
+    @Nullable
+    private final OnItemInfoClicadoListener infoListener;
+
+    public ProtocoloItemSelecionadoAdapter(@NonNull List<ProtocoloItemSelecionadoUiState> list,
+                                           @Nullable OnItemRemovidoListener removidoListener,
+                                           @Nullable OnItemInfoClicadoListener infoListener) {
         this.list = list;
         this.removidoListener = removidoListener;
+        this.infoListener = infoListener;
     }
 
     @NonNull
@@ -63,6 +75,7 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
         private final TextView textNomeMedicamento;
         private final TextView textOrigemMedicamento;
         private final TextView textDose;
+        private final MaterialButton btnInfo;
         private final ImageView btnRemoverMedicamento;
         private final MaterialCheckBox checkAplicado;
         private final MaterialCheckBox checkNaoAplicado;
@@ -74,6 +87,7 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
             textNomeMedicamento = itemView.findViewById(R.id.text_nome_medicamento);
             textOrigemMedicamento = itemView.findViewById(R.id.text_origem_medicamento);
             textDose = itemView.findViewById(R.id.text_dose);
+            btnInfo = itemView.findViewById(R.id.btn_info);
             btnRemoverMedicamento = itemView.findViewById(R.id.btn_remover_medicamento);
             checkAplicado = itemView.findViewById(R.id.check_aplicado);
             checkNaoAplicado = itemView.findViewById(R.id.check_nao_aplicado);
@@ -81,6 +95,7 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
             checkAplicado.setOnCheckedChangeListener((v, isChecked) -> onAplicadoChanged(isChecked));
             checkNaoAplicado.setOnCheckedChangeListener((v, isChecked) -> onNaoAplicadoChanged(isChecked));
             btnRemoverMedicamento.setOnClickListener(v -> removeCurrentItem());
+            btnInfo.setOnClickListener(v -> notifyInfoClicado());
         }
 
         void bind(@NonNull ProtocoloItemSelecionadoUiState state) {
@@ -109,15 +124,28 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
         }
 
         private void onAplicadoChanged(boolean isChecked) {
-            if (binding || !isChecked) return;
-            checkNaoAplicado.setChecked(false);
-            currentState.setStatus(STATUS_APLICADO);
+            if (binding) return;
+            if (isChecked) {
+                checkNaoAplicado.setChecked(false);
+                currentState.setStatus(STATUS_APLICADO);
+                return;
+            }
+            limparStatusSeAmbosDesmarcados();
         }
 
         private void onNaoAplicadoChanged(boolean isChecked) {
-            if (binding || !isChecked) return;
-            checkAplicado.setChecked(false);
-            currentState.setStatus(STATUS_NAO_APLICADO);
+            if (binding) return;
+            if (isChecked) {
+                checkAplicado.setChecked(false);
+                currentState.setStatus(STATUS_NAO_APLICADO);
+                return;
+            }
+            limparStatusSeAmbosDesmarcados();
+        }
+
+        private void limparStatusSeAmbosDesmarcados() {
+            if (checkAplicado.isChecked() || checkNaoAplicado.isChecked()) return;
+            currentState.setStatus(STATUS_INDEFINIDO);
         }
 
         private void removeCurrentItem() {
@@ -129,6 +157,11 @@ public class ProtocoloItemSelecionadoAdapter extends RecyclerView.Adapter<Protoc
             if (removidoListener != null) {
                 removidoListener.onItemRemovido(item, position);
             }
+        }
+
+        private void notifyInfoClicado() {
+            if (infoListener == null) return;
+            infoListener.onItemInfoClicado(currentState);
         }
     }
 }

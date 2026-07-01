@@ -22,10 +22,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.annotation.ColorRes;
-
 import androidx.annotation.Nullable;
-import androidx.annotation.PluralsRes;
 import androidx.core.content.ContextCompat;
 import androidx.core.os.BundleCompat;
 import androidx.fragment.app.Fragment;
@@ -33,6 +30,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.omni.container.R;
 import com.omni.container.data.AppDatabase;
@@ -79,7 +77,7 @@ public class ManejoSanitarioFragment extends Fragment {
     private static final int SEM_PROTOCOLO = 0;
     private static final double PESO_AUSENTE = 0.0;
     private static final double DOSAGEM_INICIAL = 0.0;
-    private static final char STATUS_NAO_APLICADO = 'N';
+    private static final char STATUS_INDEFINIDO = ' ';
 
     public static final String RESULT_KEY_PROTOCOLO_ITENS_SELECIONADOS = "result_protocolo_itens_selecionados";
     public static final String ARG_KEY_PROTOCOLO_ITENS_SELECIONADOS = "arg_protocolo_itens_selecionados";
@@ -94,10 +92,10 @@ public class ManejoSanitarioFragment extends Fragment {
     private static final String STATE_KEY_APLICACAO_ITEMS = "state_aplicacao_items";
     private static final String STATE_KEY_PROTOCOLO_SELECIONADO = "state_protocolo_selecionado";
     private static final String STATE_KEY_ID_ANIMAL = "state_id_animal";
-    private static final String STATE_KEY_PESO = "state_peso";
     private static final String STATE_KEY_COD_ANIMAL = "state_cod_animal";
     private static final String STATE_KEY_COD_BOTTOM = "state_cod_bottom";
     private static final String STATE_KEY_COD_SYS_BOV = "state_cod_sys_bov";
+    private static final String STATE_KEY_PESO = "state_peso";
 
     private TextView textViewContadorItens;
     private TextView textViewNomeProtocolo;
@@ -190,7 +188,7 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void setupRecyclerViewItens() {
-        itensSelecionadosAdapter = new ProtocoloItemSelecionadoAdapter(aplicacaoItems, this::handleItemRemovido);
+        itensSelecionadosAdapter = new ProtocoloItemSelecionadoAdapter(aplicacaoItems, this::handleItemRemovido, this::handleItemInfoClicado);
         ViewUtils.setupVerticalRecyclerView(recyclerViewItens, itensSelecionadosAdapter, requireContext());
     }
 
@@ -263,8 +261,8 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void showContadorItens() {
-        ViewUtils.formatTextoPlural(textViewContadorItens, requireContext(),
-                R.plurals.protocolo_itens_selecionados_count, aplicacaoItems.size());
+        textViewContadorItens.setText(
+                ProtocoloAdapter.formatQuantidadeLabel(requireContext(), aplicacaoItems.size()));
     }
 
     private void showProtocoloNoDropdown(@NonNull ProtocoloUiState protocolo) {
@@ -276,30 +274,41 @@ public class ManejoSanitarioFragment extends Fragment {
                 .show(getParentFragmentManager(), InfoAplicacaoMedicamentoFragment.TAG);
     }
 
+    private void showDialogInfoItemSelecionado(@NonNull String mensagem) {
+        InfoAplicacaoMedicamentoFragment.newInstance(getString(R.string.title_info_medicamento), mensagem)
+                .show(getParentFragmentManager(), InfoAplicacaoMedicamentoFragment.TAG);
+    }
+
     private void showSnackBarSucesso(@NonNull String mensagem) {
-        showSnackBar(mensagem, android.R.color.holo_green_dark);
-    }
-
-    private void showSnackBarErro(@NonNull String mensagem) {
-        showSnackBar(mensagem, android.R.color.holo_red_dark);
-    }
-
-    private void showSnackBarAviso(@NonNull String mensagem) {
-        showSnackBar(mensagem, android.R.color.holo_orange_dark);
-    }
-
-    private void showSnackBar(@NonNull String mensagem, @ColorRes int corFundo) {
         View view = requireView();
         Snackbar.make(view, mensagem, Snackbar.LENGTH_LONG)
-                .setBackgroundTint(ContextCompat.getColor(view.getContext(), corFundo))
+                .setBackgroundTint(ContextCompat.getColor(view.getContext(), android.R.color.holo_green_dark))
                 .setTextColor(Color.WHITE)
+                .show();
+    }
+
+    private void showErrorDialog(@NonNull String mensagem) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setIcon(R.drawable.warning_24px)
+                .setTitle(R.string.title_erro_dialog)
+                .setMessage(mensagem)
+                .setPositiveButton(R.string.btn_dialog_confirmar, null)
+                .show();
+    }
+
+    private void showAvisoDialog(@NonNull String mensagem) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setIcon(R.drawable.warning_24px)
+                .setTitle(R.string.title_aviso_dialog)
+                .setMessage(mensagem)
+                .setPositiveButton(R.string.btn_dialog_confirmar, null)
                 .show();
     }
 
     private void showAvisoDuplicadosSeNecessario(int totalCandidatos, int totalAdicionados) {
         int duplicados = getQuantidadeDuplicados(totalCandidatos, totalAdicionados);
         if (!hasDuplicados(duplicados)) return;
-        showSnackBarAviso(buildMensagemDuplicados(duplicados));
+        showAvisoDialog(buildMensagemDuplicados(duplicados));
     }
 
     private void updateVisibilidade() {
@@ -325,9 +334,8 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void handleProtocoloSelecionado(int position) {
-        if (isPosicaoInvalida(position)) return;
-        ProtocoloUiState protocolo = getProtocoloNaPosicao(position);
-        if (ProtocoloAdapter.isItemEmBranco(protocolo)) {
+        ProtocoloUiState protocolo = protocoloAdapter.resolveProtocoloSelecionado(position);
+        if (protocolo == null) {
             handleProtocoloEmBrancoSelecionado();
             return;
         }
@@ -360,15 +368,19 @@ public class ManejoSanitarioFragment extends Fragment {
 
     private void handleSalvar() {
         if (!hasAnimalSelecionado()) {
-            showSnackBarErro(getString(R.string.erro_animal_obrigatorio));
+            showErrorDialog(getString(R.string.erro_animal_obrigatorio));
             return;
         }
         if (!isPesoValido()) {
-            showSnackBarErro(getString(R.string.erro_peso_obrigatorio));
+            showErrorDialog(getString(R.string.erro_peso_obrigatorio));
             return;
         }
         if (isEmptyList(aplicacaoItems)) {
-            showSnackBarErro(getString(R.string.erro_nenhum_item));
+            showErrorDialog(getString(R.string.erro_nenhum_item));
+            return;
+        }
+        if (hasItemComStatusIndefinido()) {
+            showErrorDialog(getString(R.string.erro_status_nao_definido));
             return;
         }
         saveSanitarioData();
@@ -416,6 +428,11 @@ public class ManejoSanitarioFragment extends Fragment {
         recalcularDosagens();
     }
 
+    private void handleItemInfoClicado(@NonNull ProtocoloItemSelecionadoUiState item) {
+        if (!hasText(item.getAplicacao())) return;
+        showDialogInfoItemSelecionado(item.getAplicacao());
+    }
+
     private void handleSanitarioSalvo(@NonNull Sanitario sanitario, long idGerado) {
         sanitario.setIdSanitario((int) idGerado);
         saveSanitarioDetToDb(sanitario);
@@ -426,22 +443,22 @@ public class ManejoSanitarioFragment extends Fragment {
     }
 
     private void handleSaveError(@NonNull Throwable throwable) {
-        showSnackBarErro(getString(R.string.erro_salvar_dados));
+        showErrorDialog(getString(R.string.erro_salvar_dados));
         Log.e(TAG, getString(R.string.erro_salvar_dados) + throwable.getMessage());
     }
 
     private void handleFetchProtocolosError(@NonNull Throwable throwable) {
-        showSnackBarErro(getString(R.string.erro_carregar_protocolos));
+        showErrorDialog(getString(R.string.erro_carregar_protocolos));
         Log.e(TAG, getString(R.string.erro_carregar_protocolos) + throwable.getMessage());
     }
 
     private void handleFetchItensProtocoloError(@NonNull Throwable throwable) {
-        showSnackBarErro(getString(R.string.erro_carregar_protocolo_itens));
+        showErrorDialog(getString(R.string.erro_carregar_protocolo_itens));
         Log.e(TAG, getString(R.string.erro_carregar_protocolo_itens) + throwable.getMessage());
     }
 
     private void handleFetchDosagensError(@NonNull Throwable throwable) {
-        showSnackBarErro(getString(R.string.erro_carregar_dosagens));
+        showErrorDialog(getString(R.string.erro_carregar_dosagens));
         Log.e(TAG, getString(R.string.erro_carregar_dosagens) + throwable.getMessage());
     }
 
@@ -543,11 +560,6 @@ public class ManejoSanitarioFragment extends Fragment {
         return UUID.randomUUID().toString();
     }
 
-    @Nullable
-    private ProtocoloUiState getProtocoloNaPosicao(int position) {
-        return protocoloAdapter.getItem(position);
-    }
-
     @NonNull
     private String getIdentificacaoAnimal() {
         if (hasText(codAnimal)) return codAnimal;
@@ -587,6 +599,11 @@ public class ManejoSanitarioFragment extends Fragment {
         return protocoloSelecionado.getId();
     }
 
+    @Nullable
+    private static String getAplicacao(@Nullable Item item) {
+        return item == null ? null : item.getAplicacao();
+    }
+
     private int getQuantidadeDuplicados(int totalCandidatos, int totalAdicionados) {
         return totalCandidatos - totalAdicionados;
     }
@@ -594,7 +611,7 @@ public class ManejoSanitarioFragment extends Fragment {
     @NonNull
     private List<ProtocoloItemSelecionadoUiState> filterItensNaoDuplicados(@NonNull List<ProtocoloItemSelecionadoUiState> candidatos) {
         return candidatos.stream()
-                .filter(item -> !isItemJaAdicionado(item))
+                .filter(item -> !isItemAdicionado(item))
                 .collect(Collectors.toList());
     }
 
@@ -668,7 +685,6 @@ public class ManejoSanitarioFragment extends Fragment {
         codSysBov = savedInstanceState.getString(STATE_KEY_COD_SYS_BOV);
     }
 
-
     private boolean isProtocoloSelecionado() {
         return protocoloSelecionado != null;
     }
@@ -689,12 +705,12 @@ public class ManejoSanitarioFragment extends Fragment {
         return lista == null || lista.isEmpty();
     }
 
-    private boolean isPosicaoInvalida(int position) {
-        return position == RecyclerView.NO_POSITION;
+    private boolean isItemAdicionado(@NonNull ProtocoloItemSelecionadoUiState item) {
+        return aplicacaoItems.stream().anyMatch(existente -> existente.getId() == item.getId());
     }
 
-    private boolean isItemJaAdicionado(@NonNull ProtocoloItemSelecionadoUiState item) {
-        return aplicacaoItems.stream().anyMatch(existente -> existente.getId() == item.getId());
+    private boolean isStatusIndefinido(@NonNull ProtocoloItemSelecionadoUiState item) {
+        return item.getStatus() == STATUS_INDEFINIDO;
     }
 
     private boolean hasItens() {
@@ -703,6 +719,9 @@ public class ManejoSanitarioFragment extends Fragment {
 
     private boolean hasProtocolosCarregados() {
         return !protocolos.isEmpty();
+    }
+    private boolean hasItemComStatusIndefinido() {
+        return aplicacaoItems.stream().anyMatch(this::isStatusIndefinido);
     }
 
     private boolean hasAnimalSelecionado() {
@@ -759,14 +778,6 @@ public class ManejoSanitarioFragment extends Fragment {
             recyclerView.setAdapter(adapter);
         }
 
-        static void formatTextoPlural(@NonNull TextView view, @NonNull Context context, @PluralsRes int resId, @Nullable Integer quantity) {
-            if (quantity == null) {
-                view.setText("");
-                return;
-            }
-            view.setText(context.getResources().getQuantityString(resId, quantity, quantity));
-        }
-
         static void setText(@Nullable TextView view, @Nullable CharSequence text) {
             if (view == null) return;
             view.setText(text);
@@ -775,7 +786,7 @@ public class ManejoSanitarioFragment extends Fragment {
         static void setVisible(boolean visible, @NonNull View... views) {
             int state = visible ? View.VISIBLE : View.GONE;
             for (View v : views) {
-                if (v != null) v.setVisibility(state);
+                v.setVisibility(state);
             }
         }
     }
@@ -818,11 +829,12 @@ public class ManejoSanitarioFragment extends Fragment {
                                                                          @Nullable ItemMedicamento medicamento) {
             return new ProtocoloItemSelecionadoUiState(
                     item.getIdItem(), item.getDescricao(),
-                    origem, STATUS_NAO_APLICADO,
+                    origem, STATUS_INDEFINIDO,
                     getTipoDosagem(medicamento),
                     getQtdeDose(medicamento),
                     getPesoBase(medicamento),
                     getUnDose(medicamento),
+                    getAplicacao(item),
                     DOSAGEM_INICIAL);
         }
 
